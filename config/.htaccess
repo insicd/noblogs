@@ -1,0 +1,15 @@
+# Noblogs — configurazione: nessun accesso dal web.
+#
+# config.php contiene le credenziali del database e i salt che firmano le
+# sessioni. Se qualcuno riuscisse a leggerlo potrebbe entrare come chiunque.
+
+<IfModule mod_authz_core.c>
+    Require all denied
+</IfModule>
+
+<IfModule !mod_authz_core.c>
+    Order allow,deny
+    Deny from all
+</IfModule>
+
+Options -Indexes

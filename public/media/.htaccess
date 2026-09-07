@@ -1,0 +1,83 @@
+# Noblogs — cartella dei file caricati dagli utenti.
+#
+# Qui dentro finisce materiale che arriva da fuori: va servito, ma non deve
+# mai essere eseguito. Un file caricato che riuscisse a farsi passare per
+# immagine deve restare un file inerte.
+
+# Nessun elenco del contenuto: i nomi dei file non sono un indice pubblico.
+# FollowSymLinks non viene toccato: su qualche hosting media/ è un
+# collegamento simbolico a un disco separato, e togliendolo si romperebbe.
+Options -Indexes -ExecCGI
+
+# ---------------------------------------------------------------------------
+# 1) Spegnimento del motore PHP.
+#
+# Funziona solo con PHP come modulo di Apache. Con PHP-FPM o CGI queste
+# direttive causerebbero un errore 500, quindi vanno protette da IfModule:
+# il nome del modulo cambia secondo la versione, per questo i blocchi sono
+# più di uno.
+# ---------------------------------------------------------------------------
+<IfModule mod_php.c>
+    php_flag engine off
+</IfModule>
+<IfModule mod_php7.c>
+    php_flag engine off
+</IfModule>
+<IfModule mod_php5.c>
+    php_flag engine off
+</IfModule>
+
+# ---------------------------------------------------------------------------
+# 2) Nessun handler eseguibile associato a queste estensioni.
+#
+# Toglie l'associazione anche quando PHP gira come CGI, dove php_flag non ha
+# effetto. Copre le estensioni doppie del tipo "foto.php.jpg" perché Apache,
+# con mod_mime, guarda tutte le estensioni di un nome.
+# ---------------------------------------------------------------------------
+<IfModule mod_mime.c>
+    RemoveHandler .php .php3 .php4 .php5 .php7 .php8 .phps .phtml .pht .phar
+    RemoveHandler .cgi .pl .py .rb .sh .lua .shtml .jsp .asp .aspx
+    RemoveType .php .php3 .php4 .php5 .php7 .php8 .phps .phtml .pht .phar
+
+    # default-handler è il gestore dei file statici: qualunque cosa abbia
+    # queste estensioni viene consegnata come byte, non interpretata.
+    AddHandler default-handler .php .phtml .php3 .php4 .php5 .php7 .php8 .phar .phps .pht
+</IfModule>
+
+# ---------------------------------------------------------------------------
+# 3) Blocco esplicito delle richieste a nomi eseguibili.
+#
+# L'ultima rete: qualunque cosa assomigli a uno script viene rifiutata.
+# ---------------------------------------------------------------------------
+<FilesMatch "(?i)\.(php|php3|php4|php5|php7|php8|phps|phtml|pht|phar|cgi|pl|py|rb|sh|lua|shtml|jsp|asp|aspx|htaccess|htpasswd)($|\.)">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order allow,deny
+        Deny from all
+    </IfModule>
+</FilesMatch>
+
+# ---------------------------------------------------------------------------
+# 4) Gli SVG vengono serviti come testo, non come documento.
+#
+# Un SVG può contenere JavaScript: se il browser lo apre come immagine
+# dentro un <img> non viene eseguito, ma se qualcuno lo apre direttamente
+# come pagina sì. Noblogs bonifica gli SVG in ingresso; questa è la rete
+# di sicurezza nel caso la bonifica non sia disponibile.
+# ---------------------------------------------------------------------------
+<IfModule mod_headers.c>
+    Header always set X-Content-Type-Options "nosniff"
+    Header always set Content-Security-Policy "default-src 'none'; img-src 'self'; style-src 'unsafe-inline'; sandbox"
+
+    # I file caricati non cambiano mai nome: possono stare in cache a lungo.
+    <FilesMatch "(?i)\.(jpe?g|png|gif|webp|avif|svg|ico|mp3|mp4|ogg|webm|pdf)$">
+        Header set Cache-Control "public, max-age=31536000, immutable"
+    </FilesMatch>
+</IfModule>
+
+<IfModule mod_mime.c>
+    AddType image/webp .webp
+    AddType image/avif .avif
+</IfModule>

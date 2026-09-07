@@ -1,0 +1,195 @@
+# Noblogs — configurazione Apache della document root.
+#
+# Questo file vale per la cartella public/, che è l'unica che deve essere
+# raggiungibile dal web. Se l'hosting non permette di spostare la document
+# root, vedi il .htaccess nella radice del progetto.
+
+# ---------------------------------------------------------------------------
+# Riapertura dell'accesso.
+#
+# Il .htaccess nella radice del progetto nega tutto, e le sue direttive si
+# ereditano nelle sottocartelle: quando Noblogs sta dentro public_html senza
+# poter spostare la document root, senza questa riga public/ resterebbe
+# irraggiungibile insieme al resto. I divieti più specifici scritti sotto
+# continuano a valere.
+# ---------------------------------------------------------------------------
+<IfModule mod_authz_core.c>
+    Require all granted
+</IfModule>
+<IfModule !mod_authz_core.c>
+    Order deny,allow
+    Allow from all
+</IfModule>
+
+# ---------------------------------------------------------------------------
+# Nessun elenco dei file: le cartelle senza indice non devono mostrare
+# il proprio contenuto.
+# ---------------------------------------------------------------------------
+Options -Indexes +FollowSymLinks
+
+# ---------------------------------------------------------------------------
+# Tutte le richieste finiscono in index.php, tranne i file che esistono
+# davvero su disco (asset, immagini caricate, robots.txt statici).
+#
+# RewriteBase resta commentato: serve solo se Noblogs sta in una
+# sottocartella del dominio e Apache non riesce a dedurre il prefisso.
+# ---------------------------------------------------------------------------
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    # RewriteBase /
+
+    # Prima di tutto il resto: dentro media/ nulla di eseguibile viene
+    # servito, qualunque estensione abbia. Vedi anche public/media/.htaccess.
+    RewriteRule ^media/.*\.(?i:php|php3|php4|php5|php7|php8|phps|phar|phtml|pht|cgi|pl|py|shtml)$ - [F,L]
+
+    # Toglie lo slash finale dai percorsi che non sono cartelle: gli URL
+    # canonici di Noblogs non lo hanno, e senza questa regola la stessa
+    # pagina risponderebbe a due indirizzi diversi.
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteRule ^(.+)/$ /$1 [R=301,L]
+
+    # L'intestazione Authorization non arriva a PHP in modalità CGI/FastCGI
+    # se non la si passa a mano.
+    RewriteCond %{HTTP:Authorization} .
+    RewriteRule ^ - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
+
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteRule ^ index.php [L]
+</IfModule>
+
+# Se mod_rewrite non c'è, almeno la pagina iniziale funziona.
+<IfModule !mod_rewrite.c>
+    DirectoryIndex index.php
+</IfModule>
+
+# ---------------------------------------------------------------------------
+# File che non devono mai essere serviti, nemmeno se qualcuno li copia
+# qui dentro per sbaglio durante un aggiornamento via FTP.
+# ---------------------------------------------------------------------------
+<FilesMatch "(?i)^(\.env|\.git.*|composer\.(json|lock)|.*\.(sql|sqlite|db|log|ini|bak|old|orig|save|swp|dist|sample|yml|yaml|md))$">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order allow,deny
+        Deny from all
+    </IfModule>
+</FilesMatch>
+
+# I file che iniziano con un punto non sono mai contenuto pubblico.
+<FilesMatch "^\.">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order allow,deny
+        Deny from all
+    </IfModule>
+</FilesMatch>
+
+# ---------------------------------------------------------------------------
+# Intestazioni di sicurezza.
+#
+# X-Frame-Options riguarda solo chi prova a mettere le NOSTRE pagine dentro
+# un iframe: gli iframe che i blog inseriscono nei propri articoli (video,
+# mappe, player audio) sono in uscita e non vengono toccati.
+# ---------------------------------------------------------------------------
+<IfModule mod_headers.c>
+    Header always set X-Content-Type-Options "nosniff"
+    Header always set Referrer-Policy "strict-origin-when-cross-origin"
+    Header always set X-Frame-Options "SAMEORIGIN"
+    Header always set Cross-Origin-Opener-Policy "same-origin"
+
+    # Nessuna funzionalità del browser che Noblogs non usa.
+    Header always set Permissions-Policy "geolocation=(), microphone=(), camera=(), payment=(), usb=(), interest-cohort=()"
+
+    # Il cookie di sessione lo imposta PHP: qui non si tocca nulla.
+    # HSTS solo con HTTPS attivo e certificato valido su tutti i
+    # sottodomini, altrimenti si rende irraggiungibile la piattaforma.
+    # <IfModule mod_ssl.c>
+    #     Header always set Strict-Transport-Security "max-age=31536000; includeSubDomains" env=HTTPS
+    # </IfModule>
+
+    # Le pagine generate non vanno messe in cache dai proxy: contengono la
+    # barra dell'utente autenticato.
+    <FilesMatch "\.php$">
+        Header always set Cache-Control "no-store, no-cache, must-revalidate"
+    </FilesMatch>
+</IfModule>
+
+# ---------------------------------------------------------------------------
+# Nessuna esecuzione di PHP nella cartella dei file caricati.
+#
+# È la difesa principale contro un file malevolo che riuscisse a superare i
+# controlli sul tipo: anche se finisse su disco, resterebbe un file inerte.
+#
+# Il divieto è scritto in tre punti perché nessuno dei tre è garantito su
+# hosting condiviso: la regola di riscrittura qui sopra, la disattivazione
+# del motore PHP in public/media/.htaccess, e la forzatura del tipo MIME
+# nello stesso file. Senza mod_rewrite né la possibilità di usare php_flag,
+# resta comunque il Content-Type forzato.
+# ---------------------------------------------------------------------------
+
+# ---------------------------------------------------------------------------
+# Compressione. Le immagini e i file già compressi si lasciano stare.
+# ---------------------------------------------------------------------------
+<IfModule mod_deflate.c>
+    AddOutputFilterByType DEFLATE text/html text/plain text/xml text/css
+    AddOutputFilterByType DEFLATE application/javascript application/json
+    AddOutputFilterByType DEFLATE application/xml application/rss+xml application/atom+xml
+    AddOutputFilterByType DEFLATE image/svg+xml
+</IfModule>
+
+<IfModule mod_brotli.c>
+    AddOutputFilterByType BROTLI_COMPRESS text/html text/plain text/css
+    AddOutputFilterByType BROTLI_COMPRESS application/javascript application/json
+    AddOutputFilterByType BROTLI_COMPRESS application/xml application/atom+xml
+</IfModule>
+
+# ---------------------------------------------------------------------------
+# Scadenze degli asset statici.
+#
+# I CSS della piattaforma cambiano a ogni aggiornamento e non hanno un hash
+# nel nome: una settimana è un compromesso fra traffico risparmiato e
+# aggiornamenti che si vedono. I file caricati dagli utenti non cambiano mai
+# (il nome contiene un identificativo) e possono stare in cache a lungo.
+# ---------------------------------------------------------------------------
+<IfModule mod_expires.c>
+    ExpiresActive On
+    ExpiresDefault "access plus 1 hour"
+
+    ExpiresByType text/css "access plus 1 week"
+    ExpiresByType application/javascript "access plus 1 week"
+    ExpiresByType image/svg+xml "access plus 1 month"
+    ExpiresByType font/woff2 "access plus 1 year"
+
+    ExpiresByType image/jpeg "access plus 1 month"
+    ExpiresByType image/png "access plus 1 month"
+    ExpiresByType image/gif "access plus 1 month"
+    ExpiresByType image/webp "access plus 1 month"
+    ExpiresByType image/avif "access plus 1 month"
+
+    # I feed devono aggiornarsi in fretta.
+    ExpiresByType application/atom+xml "access plus 10 minutes"
+    ExpiresByType application/rss+xml "access plus 10 minutes"
+    ExpiresByType text/html "access plus 0 seconds"
+</IfModule>
+
+<IfModule mod_mime.c>
+    AddType application/atom+xml .atom
+    AddType image/avif .avif
+    AddType image/webp .webp
+    AddType font/woff2 .woff2
+    AddCharset utf-8 .css .js .json .xml .atom .txt .svg
+</IfModule>
+
+# ---------------------------------------------------------------------------
+# Limite di dimensione delle richieste: 24 MB coprono il caricamento di un
+# file da 10 MB con abbondanza. Vale solo se l'hosting permette di
+# sovrascrivere queste direttive; altrimenti restano quelle del server.
+# ---------------------------------------------------------------------------
+<IfModule mod_php.c>
+    php_value upload_max_filesize 12M
+    php_value post_max_size 24M
+</IfModule>

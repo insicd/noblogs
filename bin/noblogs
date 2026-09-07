@@ -1,0 +1,358 @@
+#!/usr/bin/env php
+<?php
+
+declare(strict_types=1);
+
+/**
+ * Strumenti da riga di comando di Noblogs.
+ *
+ * Serve alle operazioni pianificate (cron) e alla manutenzione straordinaria.
+ * Su hosting condiviso senza accesso SSH le stesse operazioni si trovano nella
+ * pagina «Quadro generale» dell'amministrazione.
+ *
+ *   php bin/noblogs aiuto
+ */
+
+// Questo file può stare dentro la document root su installazioni in cui non si
+// può spostare la radice del sito: se qualcuno lo chiama via HTTP non deve
+// succedere niente.
+if (PHP_SAPI !== 'cli') {
+    http_response_code(404);
+    header('Content-Type: text/plain; charset=UTF-8');
+    exit("Questo strumento si usa solo dalla riga di comando.\n");
+}
+
+require_once dirname(__DIR__) . '/app/bootstrap.php';
+
+use Noblogs\Controllers\Admin\DashboardController;
+use Noblogs\Core\Config;
+use Noblogs\Core\Database;
+use Noblogs\Markdown\Cache;
+use Noblogs\Models\Media;
+use Noblogs\Models\ModerationLog;
+use Noblogs\Models\Post;
+use Noblogs\Models\Theme;
+use Noblogs\Models\User;
+use Noblogs\Support\Str;
+
+$command = $argv[1] ?? 'aiuto';
+$arguments = array_slice($argv, 2);
+
+try {
+    exit(match ($command) {
+        'manutenzione'     => nb_cli_maintenance(),
+        'crea-admin'       => nb_cli_create_admin($arguments[0] ?? null),
+        'sincronizza-temi' => nb_cli_sync_themes(),
+        'svuota-cache'     => nb_cli_flush_cache(),
+        'statistiche'      => nb_cli_stats(),
+        'aiuto', '--help', '-h', 'help' => nb_cli_help(),
+        default            => nb_cli_unknown($command),
+    });
+} catch (\Throwable $e) {
+    nb_cli_error($e->getMessage());
+    exit(1);
+}
+
+// ===========================================================================
+// Comandi
+// ===========================================================================
+
+/** Operazioni periodiche: è il comando da mettere nel cron, una volta al giorno. */
+function nb_cli_maintenance(): int
+{
+    nb_cli_require_install();
+
+    nb_cli_title('Manutenzione');
+
+    $report = DashboardController::runMaintenance();
+
+    nb_cli_row('Letture eliminate', (string) $report['hits']);
+    nb_cli_row('Iscrizioni mai confermate', (string) $report['subscribers']);
+    nb_cli_row('Voci di cache scadute', (string) $report['cache']);
+    nb_cli_row('Temi allineati', (string) $report['themes']);
+    nb_cli_row('Blog ricalcolati', (string) $report['blogs']);
+
+    // Il punteggio della vetrina dipende dall'età dell'articolo: senza un
+    // ricalcolo periodico l'ordinamento si cristallizza sul giorno in cui i
+    // post sono stati salvati l'ultima volta.
+    nb_cli_row('Punteggi degli articoli', (string) nb_cli_rescore_posts());
+
+    ModerationLog::record(null, null, 'manutenzione-cli', sprintf(
+        'statistiche: %d, iscrizioni: %d, cache: %d, temi: %d, blog: %d',
+        $report['hits'],
+        $report['subscribers'],
+        $report['cache'],
+        $report['themes'],
+        $report['blogs']
+    ));
+
+    nb_cli_ok('Manutenzione completata.');
+    return 0;
+}
+
+/** Crea un amministratore, oppure promuove un account che esiste già. */
+function nb_cli_create_admin(?string $email): int
+{
+    nb_cli_require_install();
+
+    if ($email === null || !Str::isEmail($email)) {
+        nb_cli_error('Uso: php bin/noblogs crea-admin <email>');
+        return 2;
+    }
+
+    $email = mb_strtolower(trim($email));
+    $existing = User::findByEmail($email);
+
+    if ($existing !== null) {
+        nb_cli_line("L'account $email esiste già (ruolo: {$existing->role}).");
+    }
+
+    $password = nb_cli_prompt_password('Password: ');
+    if (mb_strlen($password) < 10) {
+        nb_cli_error('La password deve essere lunga almeno 10 caratteri.');
+        return 1;
+    }
+    if ($password !== nb_cli_prompt_password('Ripeti la password: ')) {
+        nb_cli_error('Le due password non coincidono.');
+        return 1;
+    }
+
+    if ($existing !== null) {
+        $existing->setPassword($password);
+        $existing->update(['role' => 'admin', 'is_active' => 1]);
+        if (!$existing->hasVerifiedEmail()) {
+            $existing->markEmailVerified();
+        }
+        ModerationLog::record(null, null, 'crea-admin-cli', $email . ' (promosso)');
+        nb_cli_ok("$email è ora amministratore, con la nuova password.");
+        return 0;
+    }
+
+    $user = User::create($email, $password, 'admin');
+    $user->markEmailVerified();
+    ModerationLog::record(null, null, 'crea-admin-cli', $email . ' (creato)');
+
+    nb_cli_ok("Amministratore $email creato.");
+    return 0;
+}
+
+function nb_cli_sync_themes(): int
+{
+    nb_cli_require_install();
+
+    $count = Theme::sync();
+    // Il CSS del tema è incorporato nell'HTML in cache: se cambia il tema, le
+    // pagine già rese non lo sanno.
+    Cache::flushAll();
+
+    nb_cli_ok("$count temi allineati da db/themes.php. Cache di rendering svuotata.");
+    return 0;
+}
+
+function nb_cli_flush_cache(): int
+{
+    Cache::flushAll();
+    nb_cli_ok('Cache di rendering svuotata.');
+    return 0;
+}
+
+function nb_cli_stats(): int
+{
+    nb_cli_require_install();
+
+    $db = Database::instance();
+
+    nb_cli_title('Installazione');
+    nb_cli_row('Versione', NOBLOGS_VERSION . ' su PHP ' . PHP_VERSION);
+    nb_cli_row('Dominio', (string) Config::get('site.domain'));
+    nb_cli_row('Routing', (string) Config::get('routing.mode')
+        . (Config::get('routing.path_fallback') ? ' (con fallback su percorso)' : ''));
+    nb_cli_row('Database', (string) Config::get('db.name') . ' su ' . (string) Config::get('db.host')
+        . ', prefisso «' . (string) Config::get('db.prefix') . '»');
+
+    nb_cli_title('Contenuti');
+    nb_cli_row('Blog', (string) (int) $db->fetchColumn('SELECT COUNT(*) FROM {{blogs}}'));
+    nb_cli_row('  in attesa di revisione', (string) (int) $db->fetchColumn(
+        'SELECT COUNT(*) FROM {{blogs}} WHERE to_review = 1 OR reviewed = 0'
+    ));
+    nb_cli_row('  nascosti', (string) (int) $db->fetchColumn('SELECT COUNT(*) FROM {{blogs}} WHERE hidden = 1'));
+    nb_cli_row('  segnalati', (string) (int) $db->fetchColumn('SELECT COUNT(*) FROM {{blogs}} WHERE flagged = 1'));
+    nb_cli_row('Articoli', (string) (int) $db->fetchColumn('SELECT COUNT(*) FROM {{posts}} WHERE is_page = 0'));
+    nb_cli_row('Pagine', (string) (int) $db->fetchColumn('SELECT COUNT(*) FROM {{posts}} WHERE is_page = 1'));
+    nb_cli_row('File caricati', (string) (int) $db->fetchColumn('SELECT COUNT(*) FROM {{media}}'));
+    nb_cli_row('Spazio occupato', Media::humanBytes((int) $db->fetchColumn(
+        'SELECT COALESCE(SUM(storage_used), 0) FROM {{blogs}}'
+    )));
+
+    nb_cli_title('Persone');
+    nb_cli_row('Utenti', (string) (int) $db->fetchColumn('SELECT COUNT(*) FROM {{users}}'));
+    nb_cli_row('  amministratori', (string) (int) $db->fetchColumn("SELECT COUNT(*) FROM {{users}} WHERE role = 'admin'"));
+    nb_cli_row('  moderatori', (string) (int) $db->fetchColumn("SELECT COUNT(*) FROM {{users}} WHERE role = 'moderator'"));
+    nb_cli_row('  sospesi', (string) (int) $db->fetchColumn('SELECT COUNT(*) FROM {{users}} WHERE is_active = 0'));
+    nb_cli_row('Iscritti alle newsletter', (string) (int) $db->fetchColumn(
+        'SELECT COUNT(*) FROM {{subscribers}} WHERE confirmed = 1'
+    ));
+
+    nb_cli_title('Letture');
+    nb_cli_row('Ultimi 30 giorni', (string) (int) $db->fetchColumn(
+        'SELECT COUNT(*) FROM {{hits}} WHERE hit_date >= ?',
+        [gmdate('Y-m-d', time() - 29 * 86400)]
+    ));
+    nb_cli_row('Totali conservate', (string) (int) $db->fetchColumn('SELECT COUNT(*) FROM {{hits}}'));
+    nb_cli_row('Conservazione', ((int) Config::get('limits.analytics_retention', 365)) . ' giorni');
+
+    echo "\n";
+    return 0;
+}
+
+function nb_cli_help(): int
+{
+    $cron = '0 4 * * * php ' . NOBLOGS_ROOT . '/bin/noblogs manutenzione';
+
+    echo <<<TESTO
+
+
+    Noblogs — strumenti da riga di comando
+
+      php bin/noblogs <comando>
+
+    Comandi
+
+      manutenzione        Esegue tutte le operazioni periodiche: pota le
+                          statistiche oltre il periodo di conservazione, le
+                          iscrizioni mai confermate e la cache scaduta,
+                          riallinea i temi e ricalcola contatori e punteggi.
+                          È il comando da mettere nel cron.
+
+      crea-admin <email>  Crea un amministratore, o promuove ad amministratore
+                          un account che esiste già. La password viene chiesta
+                          senza mostrarla a schermo.
+
+      sincronizza-temi    Riallinea la tabella dei temi a db/themes.php, dopo
+                          un aggiornamento o una modifica ai temi.
+
+      svuota-cache        Svuota la cache di rendering. Serve raramente: la
+                          cache si invalida da sola a ogni modifica.
+
+      statistiche         Stampa un riepilogo dell'installazione.
+
+      aiuto               Questo testo.
+
+    Esempio di riga di cron, una volta al giorno alle 4 del mattino
+
+      $cron
+
+
+    TESTO;
+
+    return 0;
+}
+
+function nb_cli_unknown(string $command): int
+{
+    nb_cli_error("Comando sconosciuto: $command");
+    nb_cli_line('Usa «php bin/noblogs aiuto» per l\'elenco dei comandi.');
+    return 2;
+}
+
+// ===========================================================================
+// Supporto
+// ===========================================================================
+
+/**
+ * Ricalcola il punteggio della vetrina di ogni articolo pubblicato.
+ *
+ * @return int Articoli aggiornati.
+ */
+function nb_cli_rescore_posts(): int
+{
+    $db = Database::instance();
+    $count = 0;
+
+    foreach ($db->fetchAll(
+        'SELECT * FROM {{posts}} WHERE first_published_at IS NOT NULL'
+    ) as $row) {
+        $post = Post::hydrate($row);
+        $score = $post->computeScore();
+        if (abs($score - $post->score) > 0.000001) {
+            $db->update('posts', ['score' => $score], 'id = :post_id', ['post_id' => $post->id]);
+            $count++;
+        }
+    }
+
+    return $count;
+}
+
+function nb_cli_require_install(): void
+{
+    if (!Config::isInstalled()) {
+        throw new \RuntimeException(
+            'Noblogs non è ancora installato: manca config/config.php. '
+            . 'Apri /install/ nel browser, oppure copia config/config.sample.php in config/config.php.'
+        );
+    }
+
+    // Un errore di connessione qui è quasi sempre una password del database
+    // cambiata: meglio dirlo che stampare un'eccezione di PDO.
+    try {
+        Database::instance();
+    } catch (\Throwable $e) {
+        throw new \RuntimeException('Connessione al database non riuscita: ' . $e->getMessage());
+    }
+}
+
+/**
+ * Chiede una password senza mostrarla.
+ *
+ * Con `stty` disponibile si spegne l'eco del terminale; altrimenti si avvisa
+ * che la password resterà visibile, invece di far credere il contrario.
+ */
+function nb_cli_prompt_password(string $label): string
+{
+    // Senza un terminale vero (pipe, cron, CI) `stty` non ha nulla da
+    // spegnere: si legge in chiaro, dicendolo.
+    $canHide = PHP_OS_FAMILY !== 'Windows'
+        && stream_isatty(STDIN)
+        && function_exists('shell_exec')
+        && is_string(shell_exec('command -v stty'));
+
+    if (!$canHide) {
+        nb_cli_line('Attenzione: questo terminale non consente di nascondere l\'input.');
+        echo $label;
+        return trim((string) fgets(STDIN));
+    }
+
+    echo $label;
+    shell_exec('stty -echo');
+    $value = (string) fgets(STDIN);
+    shell_exec('stty echo');
+    echo "\n";
+
+    return trim($value);
+}
+
+function nb_cli_title(string $text): void
+{
+    echo "\n\033[1m" . $text . "\033[0m\n";
+    echo str_repeat('─', mb_strlen($text)) . "\n";
+}
+
+function nb_cli_row(string $label, string $value): void
+{
+    printf("  %-28s %s\n", $label, $value);
+}
+
+function nb_cli_line(string $text): void
+{
+    echo $text . "\n";
+}
+
+function nb_cli_ok(string $text): void
+{
+    echo "\n\033[32m✓\033[0m " . $text . "\n\n";
+}
+
+function nb_cli_error(string $text): void
+{
+    fwrite(STDERR, "\033[31m✗\033[0m " . $text . "\n");
+}

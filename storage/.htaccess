@@ -1,0 +1,16 @@
+# Noblogs — dati di servizio: nessun accesso dal web.
+#
+# Qui stanno la cache del rendering, i registri degli errori e i file
+# temporanei dei caricamenti. Il registro degli errori in particolare
+# contiene percorsi, query e a volte frammenti di dati: non va esposto.
+
+<IfModule mod_authz_core.c>
+    Require all denied
+</IfModule>
+
+<IfModule !mod_authz_core.c>
+    Order allow,deny
+    Deny from all
+</IfModule>
+
+Options -Indexes

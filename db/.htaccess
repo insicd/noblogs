@@ -1,0 +1,15 @@
+# Noblogs — schema del database: nessun accesso dal web.
+#
+# schema.sql descrive la struttura delle tabelle: è una mappa utile a chi
+# volesse attaccare l'installazione, e non serve a nessun visitatore.
+
+<IfModule mod_authz_core.c>
+    Require all denied
+</IfModule>
+
+<IfModule !mod_authz_core.c>
+    Order allow,deny
+    Deny from all
+</IfModule>
+
+Options -Indexes

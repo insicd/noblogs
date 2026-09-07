@@ -1,0 +1,969 @@
+/* ==========================================================================
+   Noblogs — pagine pubbliche e di accesso della piattaforma.
+
+   Identità propria, distinta dai temi dei blog: colonna larga, intestazione
+   con bordo, un solo colore d'accento. Nessuna risorsa esterna, solo font di
+   sistema. Il tema scuro segue l'impostazione del sistema operativo.
+
+   I rapporti di contrasto di testo e collegamenti rispettano WCAG AA su
+   entrambi i temi, e il contorno di messa a fuoco è sempre visibile: la
+   piattaforma è la parte che si usa con la tastiera.
+   ========================================================================== */
+
+:root {
+  color-scheme: light dark;
+
+  --pf-bg: #fbfbf9;
+  --pf-surface: #ffffff;
+  --pf-surface-alt: #f2f2ed;
+  --pf-text: #1c1c1a;
+  --pf-muted: #56564f;
+  --pf-border: #dcdcd5;
+  --pf-border-strong: #b9b9b0;
+  --pf-accent: #14507d;
+  --pf-accent-text: #ffffff;
+  --pf-accent-hover: #0e3c5f;
+  --pf-ok-bg: #e4f2e6;
+  --pf-ok-text: #1c5127;
+  --pf-error-bg: #fbe6e4;
+  --pf-error-text: #8a1c14;
+  --pf-focus: #b8500a;
+
+  --pf-radius: 6px;
+  --pf-shell: 60rem;
+  --pf-font: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --pf-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --pf-bg: #15151a;
+    --pf-surface: #1d1d23;
+    --pf-surface-alt: #23232b;
+    --pf-text: #e9e9e4;
+    --pf-muted: #adada6;
+    --pf-border: #33333c;
+    --pf-border-strong: #4b4b56;
+    --pf-accent: #8ec5f0;
+    --pf-accent-text: #0d1a24;
+    --pf-accent-hover: #b3d9f7;
+    --pf-ok-bg: #16301d;
+    --pf-ok-text: #a8dfb4;
+    --pf-error-bg: #3a1714;
+    --pf-error-text: #f2b3ac;
+    --pf-focus: #ffb066;
+  }
+}
+
+/* --- base ---------------------------------------------------------------- */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  font-family: var(--pf-font);
+  font-size: 1rem;
+  line-height: 1.65;
+  color: var(--pf-text);
+  background: var(--pf-bg);
+}
+
+h1, h2, h3, h4 {
+  line-height: 1.25;
+  font-weight: 650;
+  text-wrap: balance;
+}
+
+h1 { font-size: 1.9rem; margin: 0 0 1rem; letter-spacing: -0.01em; }
+h2 { font-size: 1.35rem; margin: 2.5rem 0 .75rem; }
+h3 { font-size: 1.1rem; margin: 1.75rem 0 .5rem; }
+
+p, ul, ol, dl, table, pre, blockquote {
+  margin: 0 0 1rem;
+}
+
+a {
+  color: var(--pf-accent);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 2px;
+}
+
+a:hover {
+  color: var(--pf-accent-hover);
+}
+
+/* Il contorno non viene mai rimosso: chi naviga con la tastiera deve sapere
+   dove si trova. Due pixel di scostamento perché resti leggibile anche sopra
+   un bordo. */
+:focus-visible {
+  outline: 3px solid var(--pf-focus);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+code, kbd, samp {
+  font-family: var(--pf-mono);
+  font-size: .875em;
+}
+
+code {
+  padding: .1em .3em;
+  border-radius: 3px;
+  background: var(--pf-surface-alt);
+}
+
+pre {
+  padding: .875rem 1rem;
+  overflow-x: auto;
+  border: 1px solid var(--pf-border);
+  border-radius: var(--pf-radius);
+  background: var(--pf-surface-alt);
+  line-height: 1.5;
+}
+
+pre code {
+  padding: 0;
+  background: none;
+  white-space: pre;
+}
+
+img {
+  max-width: 100%;
+  height: auto;
+}
+
+hr {
+  height: 1px;
+  margin: 2rem 0;
+  border: 0;
+  background: var(--pf-border);
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+th, td {
+  padding: .5rem .625rem;
+  text-align: left;
+  border-bottom: 1px solid var(--pf-border);
+  vertical-align: top;
+}
+
+th {
+  font-weight: 650;
+}
+
+thead th {
+  border-bottom: 2px solid var(--pf-border-strong);
+}
+
+.pf-shell {
+  width: 100%;
+  max-width: var(--pf-shell);
+  margin-inline: auto;
+  padding-inline: 1.25rem;
+}
+
+.pf-narrow {
+  max-width: 30rem;
+}
+
+.pf-main {
+  flex: 1 0 auto;
+  padding: 2.5rem 0 3.5rem;
+}
+
+.skip-link {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  padding: .625rem 1rem;
+  background: var(--pf-accent);
+  color: var(--pf-accent-text);
+  z-index: 10;
+}
+
+.skip-link:focus {
+  left: .5rem;
+  top: .5rem;
+  color: var(--pf-accent-text);
+}
+
+/* Campo esca del modulo di registrazione: fuori dallo schermo, non
+   display:none, così i programmi che compilano i moduli lo trovano. */
+.nb-hp {
+  position: absolute;
+  left: -9999px;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+}
+
+/* --- intestazione -------------------------------------------------------- */
+
+.pf-header {
+  border-bottom: 1px solid var(--pf-border);
+  background: var(--pf-surface);
+}
+
+.pf-header .pf-shell {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: .75rem 1.5rem;
+  padding-block: .875rem;
+}
+
+.pf-logo {
+  display: inline-flex;
+  align-items: center;
+  gap: .45rem;
+  font-size: 1.125rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--pf-text);
+  text-decoration: none;
+}
+
+.pf-logo:hover {
+  color: var(--pf-accent);
+}
+
+.pf-logo-mark {
+  font-size: 1.25rem;
+  line-height: 1;
+}
+
+.pf-nav {
+  margin-right: auto;
+}
+
+.pf-nav ul,
+.pf-footer-links,
+.pf-filter-group,
+.pf-error-links,
+.pf-entry-tags {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: .35rem 1.15rem;
+}
+
+.pf-nav a,
+.pf-footer-links a {
+  color: var(--pf-muted);
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+}
+
+.pf-nav a:hover,
+.pf-nav a:focus-visible,
+.pf-footer-links a:hover {
+  color: var(--pf-accent);
+  border-bottom-color: currentColor;
+}
+
+.pf-account {
+  display: flex;
+  align-items: center;
+  gap: .875rem;
+}
+
+.pf-logout {
+  margin: 0;
+}
+
+/* --- pulsanti e collegamenti --------------------------------------------- */
+
+.pf-button {
+  display: inline-block;
+  padding: .5rem 1rem;
+  border: 1px solid var(--pf-accent);
+  border-radius: var(--pf-radius);
+  background: var(--pf-accent);
+  color: var(--pf-accent-text);
+  font: inherit;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.pf-button:hover {
+  background: var(--pf-accent-hover);
+  border-color: var(--pf-accent-hover);
+  color: var(--pf-accent-text);
+}
+
+.pf-button-big {
+  padding: .6875rem 1.375rem;
+  font-size: 1.0625rem;
+}
+
+.pf-link {
+  color: var(--pf-text);
+  text-decoration: none;
+  border-bottom: 1px solid var(--pf-border-strong);
+}
+
+.pf-link:hover {
+  color: var(--pf-accent);
+  border-bottom-color: currentColor;
+}
+
+.pf-link-button {
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  color: var(--pf-muted);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+}
+
+.pf-link-button:hover {
+  color: var(--pf-accent);
+}
+
+/* --- messaggi ------------------------------------------------------------ */
+
+.pf-flash {
+  list-style: none;
+  margin: 1.25rem 0 0;
+  padding: 0;
+  display: grid;
+  gap: .5rem;
+}
+
+.pf-flash li {
+  padding: .625rem .875rem;
+  border-radius: var(--pf-radius);
+  border-inline-start: 4px solid currentColor;
+}
+
+.pf-flash-success {
+  background: var(--pf-ok-bg);
+  color: var(--pf-ok-text);
+}
+
+.pf-flash-error {
+  background: var(--pf-error-bg);
+  color: var(--pf-error-text);
+}
+
+.pf-notice {
+  padding: .75rem .875rem;
+  border: 1px solid var(--pf-border);
+  border-radius: var(--pf-radius);
+  background: var(--pf-surface-alt);
+  color: var(--pf-muted);
+  font-size: .9375rem;
+}
+
+.pf-empty {
+  padding: 2rem 0;
+  color: var(--pf-muted);
+  font-style: italic;
+}
+
+.pf-lead {
+  font-size: 1.125rem;
+  color: var(--pf-muted);
+  max-width: 46rem;
+}
+
+.pf-hint {
+  margin: .375rem 0 0;
+  font-size: .875rem;
+  color: var(--pf-muted);
+}
+
+/* --- pagina di ingresso -------------------------------------------------- */
+
+.pf-hero {
+  display: grid;
+  gap: 2.5rem;
+  align-items: start;
+  padding-bottom: 1rem;
+}
+
+@media (min-width: 52rem) {
+  .pf-hero {
+    grid-template-columns: 1.15fr .85fr;
+    gap: 3.5rem;
+  }
+}
+
+.pf-hero h1 {
+  font-size: clamp(2.1rem, 6vw, 3rem);
+  margin-bottom: .75rem;
+}
+
+.pf-stats {
+  margin-top: 1.5rem;
+  color: var(--pf-muted);
+  font-size: .9375rem;
+}
+
+.pf-stats strong {
+  font-size: 1.25rem;
+  color: var(--pf-text);
+  font-variant-numeric: tabular-nums;
+}
+
+.pf-hero-form {
+  padding: 1.5rem;
+  border: 1px solid var(--pf-border);
+  border-radius: calc(var(--pf-radius) * 2);
+  background: var(--pf-surface);
+}
+
+.pf-hero-form h2 {
+  margin: 0 0 1rem;
+  font-size: 1.2rem;
+}
+
+.pf-form-note {
+  margin: .75rem 0 0;
+  font-size: .875rem;
+  color: var(--pf-muted);
+}
+
+.pf-features {
+  padding-top: 1.5rem;
+}
+
+.pf-feature-grid {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 1.5rem 2rem;
+}
+
+@media (min-width: 40rem) {
+  .pf-feature-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.pf-feature-grid h3 {
+  margin: 0 0 .375rem;
+  display: flex;
+  align-items: baseline;
+  gap: .5rem;
+}
+
+.pf-feature-grid p {
+  margin: 0;
+  color: var(--pf-muted);
+}
+
+.pf-feature-glyph {
+  font-size: 1.125rem;
+}
+
+.pf-more {
+  margin-top: 1.5rem;
+}
+
+.pf-tagline {
+  margin-top: 3rem;
+  color: var(--pf-muted);
+  font-size: .9375rem;
+}
+
+/* --- moduli -------------------------------------------------------------- */
+
+.pf-form {
+  display: grid;
+  gap: 1.25rem;
+  margin: 1.75rem 0;
+}
+
+.pf-field label,
+.pf-hero-form label {
+  display: block;
+  margin-bottom: .3125rem;
+  font-weight: 600;
+  font-size: .9375rem;
+}
+
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="search"],
+input[type="url"] {
+  width: 100%;
+  padding: .5625rem .6875rem;
+  font: inherit;
+  color: var(--pf-text);
+  background: var(--pf-surface);
+  border: 1px solid var(--pf-border-strong);
+  border-radius: var(--pf-radius);
+}
+
+input:focus-visible {
+  border-color: var(--pf-accent);
+}
+
+::placeholder {
+  color: var(--pf-muted);
+  opacity: .8;
+}
+
+.pf-field-inline {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+}
+
+.pf-field-inline input {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.pf-field-suffix {
+  flex: 0 0 auto;
+  color: var(--pf-muted);
+  font-size: .9375rem;
+  white-space: nowrap;
+}
+
+.pf-form button[type="submit"] {
+  justify-self: start;
+}
+
+.pf-hero-form button[type="submit"] {
+  margin-top: 1rem;
+  width: 100%;
+}
+
+.pf-form-links {
+  font-size: .9375rem;
+  color: var(--pf-muted);
+}
+
+/* --- vetrina ------------------------------------------------------------- */
+
+.pf-search {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: .625rem;
+  margin: 1.5rem 0;
+}
+
+.pf-search label {
+  flex: 1 1 100%;
+  font-weight: 600;
+  font-size: .9375rem;
+}
+
+.pf-search input {
+  flex: 1 1 16rem;
+}
+
+.pf-search button {
+  padding: .5625rem 1.125rem;
+  font: inherit;
+  font-weight: 600;
+  color: var(--pf-accent-text);
+  background: var(--pf-accent);
+  border: 1px solid var(--pf-accent);
+  border-radius: var(--pf-radius);
+  cursor: pointer;
+}
+
+.pf-search button:hover {
+  background: var(--pf-accent-hover);
+  border-color: var(--pf-accent-hover);
+}
+
+.pf-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .5rem 2rem;
+  padding: .75rem 0;
+  margin-bottom: .5rem;
+  border-block: 1px solid var(--pf-border);
+  font-size: .9375rem;
+}
+
+/* I gruppi di filtri stanno sulla stessa riga: un separatore rende evidente
+   dove finisce l'ordinamento e comincia la lingua. */
+.pf-filter-group + .pf-filter-group {
+  padding-left: 2rem;
+  border-left: 1px solid var(--pf-border);
+}
+
+.pf-filter-group a {
+  color: var(--pf-muted);
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+}
+
+.pf-filter-group a:hover {
+  color: var(--pf-accent);
+  border-bottom-color: currentColor;
+}
+
+.pf-filter-group a[aria-current] {
+  color: var(--pf-text);
+  font-weight: 650;
+  border-bottom-color: var(--pf-accent);
+}
+
+.pf-entries {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.pf-entry {
+  padding: 1.25rem 0;
+  border-bottom: 1px solid var(--pf-border);
+}
+
+.pf-entry-title {
+  margin: 0 0 .25rem;
+  font-size: 1.1875rem;
+}
+
+.pf-entry-title a {
+  color: var(--pf-text);
+  text-decoration: none;
+}
+
+.pf-entry-title a:hover {
+  color: var(--pf-accent);
+  text-decoration: underline;
+}
+
+.pf-entry-meta {
+  margin: 0 0 .5rem;
+  font-size: .875rem;
+  color: var(--pf-muted);
+}
+
+.pf-entry-blog {
+  color: var(--pf-muted);
+  font-weight: 600;
+}
+
+.pf-entry-description {
+  margin: 0;
+  color: var(--pf-muted);
+}
+
+.pf-entry-tags {
+  margin-top: .5rem;
+  gap: .35rem .5rem;
+  font-size: .8125rem;
+}
+
+.pf-entry-tags a {
+  display: inline-block;
+  padding: .0625rem .5rem;
+  border: 1px solid var(--pf-border);
+  border-radius: 999px;
+  color: var(--pf-muted);
+  text-decoration: none;
+}
+
+.pf-entry-tags a:hover {
+  border-color: var(--pf-accent);
+  color: var(--pf-accent);
+}
+
+.pf-pagination {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 1rem;
+  margin: 2rem 0;
+  font-size: .9375rem;
+}
+
+.pf-pagination a:last-child {
+  text-align: right;
+}
+
+.pf-pagination-info {
+  color: var(--pf-muted);
+  text-align: center;
+}
+
+.pf-discover-links,
+.pf-results-count {
+  font-size: .9375rem;
+  color: var(--pf-muted);
+}
+
+.pf-results-heading {
+  margin-top: 2rem;
+}
+
+/* --- pagine di testo ----------------------------------------------------- */
+
+.pf-prose {
+  max-width: 44rem;
+}
+
+.pf-prose h2 {
+  padding-top: .5rem;
+  border-top: 1px solid var(--pf-border);
+}
+
+.pf-prose li {
+  margin-bottom: .375rem;
+}
+
+.pf-prose dt {
+  font-weight: 650;
+  margin-top: 1rem;
+}
+
+.pf-prose dd {
+  margin: .25rem 0 0;
+  padding-left: 1rem;
+  border-left: 2px solid var(--pf-border);
+  color: var(--pf-muted);
+}
+
+.pf-prose table {
+  font-size: .9375rem;
+}
+
+.pf-toc {
+  padding: 1rem 1.25rem;
+  border: 1px solid var(--pf-border);
+  border-radius: var(--pf-radius);
+  background: var(--pf-surface-alt);
+  font-size: .9375rem;
+}
+
+.pf-toc ol {
+  margin: 0;
+  padding-left: 1.25rem;
+}
+
+.pf-toc li {
+  margin-bottom: .1875rem;
+}
+
+/* --- guida al markdown --------------------------------------------------- */
+
+/* La guida è più larga delle altre pagine di testo perché gli esempi stanno
+   su due colonne; i paragrafi restano stretti per non allungare le righe. */
+.pf-guide {
+  max-width: 54rem;
+}
+
+.pf-guide > p,
+.pf-guide .pf-toc,
+.pf-md-section > p {
+  max-width: 44rem;
+}
+
+.pf-md-section {
+  margin-bottom: 2.5rem;
+}
+
+.pf-md-example {
+  display: grid;
+  gap: .75rem;
+  margin: 1rem 0 1.5rem;
+  padding: 1rem;
+  border: 1px solid var(--pf-border);
+  border-radius: var(--pf-radius);
+  background: var(--pf-surface);
+}
+
+@media (min-width: 46rem) {
+  .pf-md-example {
+    grid-template-columns: 1fr 1fr;
+    gap: 1.25rem;
+  }
+}
+
+.pf-md-example h3 {
+  margin: 0 0 .5rem;
+  font-size: .75rem;
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--pf-muted);
+}
+
+.pf-md-source pre {
+  margin: 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.pf-md-rendered > :first-child {
+  margin-top: 0;
+}
+
+.pf-md-rendered > :last-child {
+  margin-bottom: 0;
+}
+
+.pf-md-rendered h1 { font-size: 1.4rem; margin: 1rem 0 .5rem; }
+.pf-md-rendered h2 { font-size: 1.2rem; margin: 1rem 0 .5rem; padding-top: 0; border-top: 0; }
+.pf-md-rendered h3 { font-size: 1.05rem; margin: 1rem 0 .5rem;
+  letter-spacing: normal; text-transform: none; color: inherit; font-weight: 650; }
+.pf-md-rendered h4,
+.pf-md-rendered h5,
+.pf-md-rendered h6 { font-size: 1rem; margin: 1rem 0 .5rem; }
+
+.pf-md-rendered blockquote {
+  margin: 1rem 0;
+  padding: .25rem 0 .25rem 1rem;
+  border-left: 3px solid var(--pf-border-strong);
+  color: var(--pf-muted);
+}
+
+.pf-md-rendered .callout {
+  margin: 1rem 0;
+  padding: .75rem 1rem;
+  border: 1px solid var(--pf-border);
+  border-left-width: 4px;
+  border-radius: var(--pf-radius);
+  background: var(--pf-surface-alt);
+}
+
+.pf-md-rendered .callout-title {
+  margin: 0 0 .25rem;
+  font-weight: 700;
+}
+
+.pf-md-rendered .callout > :last-child {
+  margin-bottom: 0;
+}
+
+.pf-md-rendered .callout-warning,
+.pf-md-rendered .callout-danger {
+  border-left-color: var(--pf-error-text);
+}
+
+.pf-md-rendered .callout-note,
+.pf-md-rendered .callout-info,
+.pf-md-rendered .callout-tip {
+  border-left-color: var(--pf-accent);
+}
+
+.pf-md-rendered li.task {
+  list-style: none;
+  margin-left: -1.25rem;
+}
+
+.pf-md-rendered .footnotes {
+  margin-top: 1.5rem;
+  font-size: .875rem;
+  color: var(--pf-muted);
+}
+
+.pf-md-rendered mark {
+  padding: 0 .15em;
+  background: #fbe7a1;
+  color: #3d2d00;
+}
+
+.pf-md-rendered .post-list,
+.pf-md-rendered .tag-cloud {
+  list-style: none;
+  padding: 0;
+}
+
+.pf-md-rendered .link-blocked,
+.pf-md-rendered .image-blocked {
+  color: var(--pf-error-text);
+  text-decoration: line-through;
+}
+
+.pf-md-rendered img {
+  border-radius: var(--pf-radius);
+}
+
+.pf-md-table {
+  font-size: .9375rem;
+}
+
+.pf-md-table code {
+  white-space: nowrap;
+}
+
+/* --- pagine di errore ---------------------------------------------------- */
+
+.pf-error {
+  padding-top: 1.5rem;
+}
+
+.pf-error-code {
+  margin: 0 0 .25rem;
+  font-size: 3.5rem;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--pf-border-strong);
+}
+
+.pf-error-links {
+  flex-direction: column;
+  gap: .375rem;
+}
+
+/* --- piè di pagina ------------------------------------------------------- */
+
+.pf-footer {
+  flex: 0 0 auto;
+  padding: 1.5rem 0 2.5rem;
+  border-top: 1px solid var(--pf-border);
+  background: var(--pf-surface);
+  font-size: .875rem;
+  color: var(--pf-muted);
+}
+
+.pf-footer-note {
+  margin: .75rem 0 0;
+  max-width: 44rem;
+}
+
+/* --- stampa e movimento -------------------------------------------------- */
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+@media print {
+  .pf-header,
+  .pf-footer,
+  .pf-flash,
+  .skip-link {
+    display: none;
+  }
+
+  body {
+    color: #000;
+    background: #fff;
+  }
+}

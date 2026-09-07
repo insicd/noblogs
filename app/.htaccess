@@ -1,0 +1,15 @@
+# Noblogs — codice dell'applicazione: nessun accesso dal web.
+#
+# Nessun file di questa cartella va richiesto direttamente: l'unico punto di
+# ingresso è public/index.php.
+
+<IfModule mod_authz_core.c>
+    Require all denied
+</IfModule>
+
+<IfModule !mod_authz_core.c>
+    Order allow,deny
+    Deny from all
+</IfModule>
+
+Options -Indexes
