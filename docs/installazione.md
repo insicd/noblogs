@@ -17,6 +17,7 @@ già cosa stai facendo, il riassunto nel [README](../README.md) basta.
   - [DirectAdmin](#directadmin)
 - [Installazione senza installer](#installazione-senza-installer)
 - [Quando la document root non si può spostare](#quando-la-document-root-non-si-può-spostare)
+- [Quando manca mod_rewrite](#quando-manca-mod_rewrite)
 - [Problemi frequenti](#problemi-frequenti)
 
 ## Prima di cominciare
@@ -83,12 +84,23 @@ il progetto in una cartella qualsiasi fuori dalla parte pubblica, per esempio
 `/home/utente/noblogs/`, e imposti la cartella pubblica del dominio su
 `/home/utente/noblogs/public`. Come si fa dipende dal pannello: vedi sotto.
 
-**Strada B — la document root è fissa.** Carichi la cartella `noblogs/`
-dentro `public_html/`. Il file `.htaccess` nella radice del progetto nega
-l'accesso a tutto e `public/.htaccess` lo riapre solo per la cartella
-pubblica; il sito risponderà su `esempio.tld/noblogs/public/`. Per averlo
-sulla radice del dominio vedi
-[Quando la document root non si può spostare](#quando-la-document-root-non-si-può-spostare).
+**Strada B — la document root è fissa, ma c'è mod_rewrite** (la più comune
+sugli hosting condivisi). Carichi **tutto** il progetto dentro `public_html/`,
+così la radice del sito coincide con la radice di Noblogs. Lo `.htaccess` in
+radice manda ogni richiesta in `public/` e risponde 403 su `app/`, `config/`,
+`storage/` e il resto. Il sito risponde su `esempio.tld/` senza spostare file
+a ogni aggiornamento.
+
+Se Noblogs sta in una sottocartella (`esempio.tld/noblogs/`), in `.htaccess`
+nella radice del progetto decommenta e adatta:
+
+```
+RewriteBase /noblogs/
+RewriteCond %{DOCUMENT_ROOT}/noblogs/public/index.php -f
+```
+
+**Strada C — niente rewrite, document root fissa.** Vedi
+[Quando manca mod_rewrite](#quando-manca-mod_rewrite).
 
 Carica i file in modalità **binaria** (o «automatica»): il client FTP non
 deve convertire le fine di riga, altrimenti gli archivi caricati e le firme
@@ -344,8 +356,32 @@ php bin/noblogs statistiche
 
 ## Quando la document root non si può spostare
 
-Se il dominio deve puntare per forza a `public_html/` e vuoi Noblogs sulla
-radice del dominio:
+È la **strada B** del passo 2: carichi l'intero progetto in `public_html/`
+(non solo `public/`). Lo `.htaccess` nella radice fa da ponte:
+
+```
+esempio.tld/accedi          →  public/index.php
+esempio.tld/assets/css/...  →  public/assets/css/...
+esempio.tld/config/...      →  403
+```
+
+Verifica, dopo il caricamento:
+
+- `esempio.tld/` mostra l'installer (o la pagina iniziale);
+- `esempio.tld/config/config.php` risponde **403**, non il contenuto del file;
+- `esempio.tld/public/` reindirizza a `esempio.tld/`.
+
+Se il sito sta in una sottocartella (`esempio.tld/noblogs/`), nello
+`.htaccess` in radice decommenta e adatta `RewriteBase` e la condizione
+sulla sottocartella, come indicato nei commenti di quel file.
+
+Serve `mod_rewrite` e `AllowOverride FileInfo` (di solito già attivi su
+cPanel/Plesk). Se l'hosting li rifiuta, resta la strada C qui sotto.
+
+## Quando manca mod_rewrite
+
+Se il dominio deve puntare per forza a `public_html/` e Apache non applica
+le regole di riscrittura:
 
 1. Carica il progetto in `public_html/noblogs/`.
 2. Sposta il **contenuto** di `public_html/noblogs/public/` in
@@ -356,17 +392,16 @@ radice del dominio:
    require_once __DIR__ . '/noblogs/app/bootstrap.php';
    ```
 
-4. **Tieni** `public_html/noblogs/.htaccess`, quello che nega ogni accesso: le
-   direttive di Apache valgono per le richieste HTTP, non per le `require` di
-   PHP, quindi il codice resta protetto dal web e utilizzabile
-   dall'applicazione. Va cancellato soltanto nel caso in cui il progetto
-   finisse direttamente nella document root, che qui non è quello che
-   stiamo facendo.
+4. **Tieni** `public_html/noblogs/.htaccess`. Le sue regole negano l'accesso
+   HTTP a codice e configurazione; PHP può comunque fare `require` di quei
+   file. In questa disposizione lo `.htaccess` in `noblogs/` non deve
+   riscrivere verso `public/` (la document root non contiene
+   `public/index.php` come sottocartella, quindi le regole restano spente).
 5. Verifica che `esempio.tld/noblogs/config/config.php` risponda 403 e che
    `esempio.tld/` mostri la pagina iniziale.
 
 È una configurazione che funziona ma va rifatta a ogni aggiornamento: se
-l'hosting permette di spostare la document root, quella strada costa meno.
+l'hosting ha `mod_rewrite`, la strada B costa meno.
 
 ## Problemi frequenti
 
@@ -376,15 +411,16 @@ del server dal pannello. Se contiene `not allowed here`, l'hosting ha
 `AllowOverride` limitato: chiedi all'assistenza di attivarlo, oppure togli da
 `public/.htaccess` i blocchi `<IfModule mod_headers.c>` e `Options`.
 
-**403 su tutto.** Manca il `Require all granted` in `public/.htaccess`, che
-riapre l'accesso negato dal `.htaccess` nella radice del progetto: quel
-divieto si eredita nelle sottocartelle. Ricarica il file originale.
+**403 su tutto.** Controlla che in `public/.htaccess` ci sia `Require all
+granted`. Se l'hosting è Apache 2.2, deve esserci anche il blocco
+`Allow from all`. Ricarica i file originali.
 
 **La pagina iniziale funziona ma ogni altro indirizzo dà 404.** La
 riscrittura degli URL non è attiva. Su Apache serve mod_rewrite e
-`AllowOverride All`; su nginx la direttiva
+`AllowOverride FileInfo` (meglio `All`); su nginx la direttiva
 `try_files $uri /index.php$is_args$args;`. Su IIS serve una regola in
-`web.config`, che Noblogs non fornisce.
+`web.config`, che Noblogs non fornisce. Se la document root è la radice del
+progetto, serve anche lo `.htaccess` in radice (strada B).
 
 **«Impossibile connettersi al database».** Controlla che l'host sia quello
 indicato dal pannello e non `localhost`, e che il nome del database e

@@ -81,9 +81,11 @@ sì.
 
 2. **Carica i file.** Se il pannello permette di scegliere la cartella
    pubblica di un dominio, punta la document root su `public/` e carica tutto
-   il progetto fuori dalla portata del web. Altrimenti carica la cartella
-   `noblogs/` dentro `public_html/`: il file `.htaccess` nella radice del
-   progetto impedisce di raggiungere il codice e la configurazione.
+   il progetto fuori dalla portata del web. Altrimenti carica **tutto** il
+   progetto dentro `public_html/` (la document root fissa): lo `.htaccess`
+   nella radice manda le richieste in `public/` e tiene fuori codice e
+   configurazione. I dettagli sono in
+   [docs/installazione.md](docs/installazione.md).
 
 3. **Rendi scrivibili tre cartelle**: `storage/`, `public/media/` e `config/`.
    Dal gestore file del pannello si imposta il permesso 755 (su alcuni

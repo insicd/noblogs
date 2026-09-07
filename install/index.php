@@ -1009,7 +1009,9 @@ function nb_install_view_run(array $state, string $self, string $token, string $
       è codice inutile e raggiungibile; l'installer si rifiuta di ripartire, ma la regola è
       togliere quello che non serve.</li>
       <li>Se puoi, fai in modo che la document root del sito punti a <code>public/</code>: è
-      l'unica cartella che deve essere raggiungibile dal web.</li>
+      l'unica cartella che deve essere raggiungibile dal web. Se l'hosting non lo permette,
+      lo <code>.htaccess</code> nella radice del progetto manda già le richieste in
+      <code>public/</code> da solo.</li>
       <li>Controlla che <code>config/config.php</code> non sia leggibile dagli altri utenti del
       server (permessi 640).</li>
     </ul>

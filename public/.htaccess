@@ -1,17 +1,15 @@
-# Noblogs — configurazione Apache della document root.
+# Noblogs — configurazione Apache della cartella pubblica.
 #
-# Questo file vale per la cartella public/, che è l'unica che deve essere
-# raggiungibile dal web. Se l'hosting non permette di spostare la document
-# root, vedi il .htaccess nella radice del progetto.
+# Questo file vale per public/, l'unica cartella che deve rispondere al web.
+# Se l'hosting non permette di puntare la document root qui, il .htaccess
+# nella radice del progetto manda qui ogni richiesta (vedi docs/installazione.md).
 
 # ---------------------------------------------------------------------------
-# Riapertura dell'accesso.
+# Accesso consentito.
 #
-# Il .htaccess nella radice del progetto nega tutto, e le sue direttive si
-# ereditano nelle sottocartelle: quando Noblogs sta dentro public_html senza
-# poter spostare la document root, senza questa riga public/ resterebbe
-# irraggiungibile insieme al resto. I divieti più specifici scritti sotto
-# continuano a valere.
+# Resta esplicito perché, se qualcuno rimettesse un «Require all denied»
+# nel genitore, senza questa riga il sito diventerebbe un 403 su tutto.
+# I divieti più specifici scritti sotto continuano a valere.
 # ---------------------------------------------------------------------------
 <IfModule mod_authz_core.c>
     Require all granted
