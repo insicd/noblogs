@@ -160,7 +160,7 @@ return [
     'post.error.blog_full'           => 'Hai raggiunto il numero massimo di testi per questo blog.',
 
     // Editor
-    'editor.hint'              => 'Si scrive in Markdown: **grassetto**, *corsivo*, `codice`, > citazione. Le direttive fra graffe inseriscono elenchi e indici.',
+    'editor.hint'              => 'Si scrive in Markdown: **grassetto**, *corsivo*, `codice`, > citazione. Invio va a capo; una riga vuota inizia un paragrafo. Le direttive fra graffe inseriscono elenchi e indici.',
     'editor.syntax_help'       => 'Guida alla sintassi',
     'editor.save_shortcut'     => 'Salva (Ctrl+S)',
     'editor.copy'              => 'Copia',

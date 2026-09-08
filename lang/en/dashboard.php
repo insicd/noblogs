@@ -159,7 +159,7 @@ return [
     'post.error.blog_full'        => 'You have reached the maximum number of texts for this blog.',
 
     // Editor
-    'editor.hint'                => 'Written in Markdown: **bold**, *italic*, `code`, > quote. Directives in braces insert listings and indexes.',
+    'editor.hint'                => 'Written in Markdown: **bold**, *italic*, `code`, > quote. Enter starts a new line; a blank line starts a paragraph. Directives in braces insert listings and indexes.',
     'editor.syntax_help'         => 'Syntax guide',
     'editor.save_shortcut'       => 'Save (Ctrl+S)',
     'editor.copy'                => 'Copy',

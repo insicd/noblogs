@@ -147,14 +147,20 @@ final class Inline
 
     // --- costruzioni inline ------------------------------------------------
 
-    private function hardBreak(string $text, int $pos): ?array
+    /**
+     * Un a capo dentro il paragrafo è un <br>, come in un editor.
+     * CommonMark lo tratterebbe come spazio; qui Invio va a capo.
+     * Due a capo restano un paragrafo nuovo: li spezza il parser a blocchi
+     * prima di arrivare qui.
+     *
+     * I due spazi (o il backslash) prima dell'a capo, regola CommonMark,
+     * restano accettati: gli spazi finali si mangiano insieme all'a capo.
+     */
+    private function hardBreak(string $text, int $pos): array
     {
         $spaces = 0;
         while ($pos - $spaces - 1 >= 0 && $text[$pos - $spaces - 1] === ' ') {
             $spaces++;
-        }
-        if ($spaces < 2) {
-            return null;
         }
 
         return self::token([self::raw("<br>\n")], 1, $pos - $spaces);

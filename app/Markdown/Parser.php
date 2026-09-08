@@ -10,6 +10,7 @@ namespace Noblogs\Markdown;
  * Scelte deliberate rispetto a CommonMark:
  *  - i blocchi di codice indentati a 4 spazi NON sono supportati: nella pratica
  *    gli utenti li producono per sbaglio indentando le liste;
+ *  - un a capo singolo dentro un paragrafo diventa <br> (Invio va a capo);
  *  - le direttive `{{ ... }}` attraversano il parser inalterate, perché sono
  *    risolte da un componente a valle;
  *  - il contenuto di codice e HTML grezzo è messo da parte in segnaposto opachi

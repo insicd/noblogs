@@ -192,12 +192,11 @@ final class PageController extends Controller
             [
                 'id' => 'paragrafi',
                 'title' => 'Paragrafi e ritorni a capo',
-                'note' => 'Una riga vuota separa due paragrafi. Dentro lo stesso paragrafo, '
-                    . 'per andare a capo si chiude la riga con due spazi oppure con una barra rovesciata.',
+                'note' => 'Una riga vuota separa due paragrafi. Un Invio singolo, dentro lo stesso '
+                    . 'paragrafo, va a capo (come in un editor).',
                 'examples' => [
-                    "Questo è un paragrafo: righe consecutive\nfanno parte dello stesso blocco di testo.\n\n"
-                    . "Una riga vuota comincia un paragrafo nuovo.\n\n"
-                    . "Prima riga  \nseconda riga, dentro lo stesso paragrafo.\\\nterza riga.",
+                    "Questo è un paragrafo: un a capo singolo\nresta visibile, non si fonde in uno spazio.\n\n"
+                    . "Una riga vuota comincia un paragrafo nuovo.",
                 ],
             ],
             [

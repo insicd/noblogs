@@ -110,6 +110,6 @@ final class Renderer
 
     private static function cacheKey(Blog $blog, ?Post $post, string $markdown): string
     {
-        return 'render/' . $blog->id . '/' . ($post?->id ?? 0) . '/' . substr(sha1($markdown), 0, 16);
+        return 'render/' . $blog->id . '/' . ($post?->id ?? 0) . '/' . substr(sha1('br1|' . $markdown), 0, 16);
     }
 }
