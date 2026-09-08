@@ -69,7 +69,15 @@ final class View
             $layoutData = $this->layoutData;
             $this->layoutName = null;
             $this->layoutData = [];
-            $this->slots['content'] = $content;
+
+            // I template dei blog riempiono lo slot con start('content')/end()
+            // e non scrivono nulla fuori: l'output catturato è vuoto. Se si
+            // sovrascrivesse lo slot con quella stringa vuota, il guscio
+            // mostrerebbe titolo e navigazione e niente altro.
+            if (trim($content) !== '' || !$this->hasSlot('content')) {
+                $this->slots['content'] = $content;
+            }
+
             $content = $this->capture($layout, array_merge($data, $layoutData));
         }
 

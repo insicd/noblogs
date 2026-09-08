@@ -115,14 +115,7 @@ $navItems = [
 <?php endif; ?>
 
 <main id="contenuto" class="pf-main">
-<?php
-// Nota sullo slot 'content': View::renderTemplate() assegna a questo slot
-// l'output diretto del template, sovrascrivendo quello che il template aveva
-// messo con start('content')/end(). Perciò le viste della piattaforma, dopo
-// end(), rimandano in output il proprio slot: è l'unico modo perché il
-// contenuto arrivi fin qui senza modificare View.
-echo $this->slot('content');
-?>
+<?= $this->slot('content') ?>
 </main>
 
 <footer class="pf-footer">
