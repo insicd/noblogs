@@ -1,9 +1,5 @@
 /**
- * Apprezzamenti.
- *
- * Il token sta già sul pulsante, così il clic funziona anche se la richiesta
- * di stato non arriva. Quella richiesta serve solo ad aggiornare il conteggio
- * e a marcare il pulsante se hai già votato.
+ * Apprezzamenti. Incluso nella pagina del post (layouts/site.php).
  */
 (() => {
   'use strict';
@@ -18,35 +14,28 @@
   }
 
   const endpoint = script.getAttribute('data-endpoint');
-  const infoUrl = script.getAttribute('data-info');
   if (!endpoint) {
     return;
   }
 
+  const infoUrl = script.getAttribute('data-info');
   const countEl = widget.querySelector('.upvote-count');
   let token = button.getAttribute('data-token') || '';
-  let interacted = false;
   let busy = false;
 
-  const markInteracted = () => {
-    interacted = true;
-  };
-
-  window.addEventListener('pointerdown', markInteracted, { once: true, passive: true });
-  window.addEventListener('pointermove', markInteracted, { once: true, passive: true });
-  window.addEventListener('keydown', markInteracted, { once: true });
-  window.addEventListener('scroll', markInteracted, { once: true, passive: true, capture: true });
-
-  const hide = () => {
-    widget.hidden = true;
-    button.disabled = true;
-    widget.classList.remove('is-voted');
-    button.removeAttribute('aria-pressed');
-  };
-
   const asCount = (value) => {
-    const n = Number(value);
+    const n = parseInt(String(value), 10);
     return Number.isFinite(n) ? n : null;
+  };
+
+  const paint = (voted, count) => {
+    button.setAttribute('aria-pressed', voted ? 'true' : 'false');
+    widget.classList.toggle('is-voted', voted);
+    if (countEl && count !== null) {
+      countEl.textContent = String(Math.max(0, count));
+    }
+    widget.hidden = false;
+    button.disabled = false;
   };
 
   const apply = (data) => {
@@ -54,34 +43,25 @@
       return false;
     }
     if (data.enabled === false || data.error === 'disabled') {
-      hide();
+      widget.hidden = true;
+      button.disabled = true;
       return false;
     }
     if (data.error) {
       return false;
     }
-    const count = asCount(data.count);
-    if (countEl && count !== null) {
-      countEl.textContent = String(count);
-    }
     if (typeof data.token === 'string' && data.token !== '') {
       token = data.token;
       button.setAttribute('data-token', data.token);
     }
-    const voted = !!data.voted;
-    button.setAttribute('aria-pressed', voted ? 'true' : 'false');
-    widget.classList.toggle('is-voted', voted);
-    widget.hidden = false;
-    button.disabled = false;
+    paint(!!data.voted, asCount(data.count));
     return true;
   };
 
   const request = (url, options) => fetch(url, Object.assign({
     credentials: 'same-origin',
     cache: 'no-store',
-    headers: {
-      Accept: 'application/json'
-    }
+    headers: { Accept: 'application/json' }
   }, options)).then((response) => response.json().catch(() => null));
 
   if (infoUrl) {
@@ -90,16 +70,21 @@
   }
 
   button.addEventListener('click', () => {
-    if (busy || button.disabled || token === '') {
+    if (busy || button.disabled || token === '' || !endpoint) {
       return;
     }
     busy = true;
     button.disabled = true;
 
+    const wasVoted = button.getAttribute('aria-pressed') === 'true';
+    const nextVoted = !wasVoted;
+    const current = asCount(countEl ? countEl.textContent : '0') ?? 0;
+    paint(nextVoted, current + (nextVoted ? 1 : -1));
+
     const body = new URLSearchParams();
     body.set('uid', button.getAttribute('data-uid') || '');
     body.set('token', token);
-    body.set('interacted', interacted ? '1' : '0');
+    body.set('interacted', '1');
     body.set('website', '');
 
     request(endpoint, {
@@ -111,10 +96,10 @@
       body: body.toString()
     }).then((data) => {
       if (!apply(data)) {
-        button.disabled = false;
+        paint(wasVoted, current);
       }
     }).catch(() => {
-      button.disabled = false;
+      paint(wasVoted, current);
     }).then(() => {
       busy = false;
       if (!widget.hidden) {

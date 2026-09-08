@@ -38,6 +38,15 @@ $this->start('content');
 
   <div class="post-content"><?= $contentHtml ?></div>
 
+<style>
+.upvote { margin-top: 1.5em; }
+.upvote[hidden] { display: none !important; }
+.upvote-button[aria-pressed="true"] {
+  font-weight: 700;
+  box-shadow: inset 0 0 0 2px currentColor;
+}
+</style>
+
 <?php $tags = $post->tagList(); ?>
 <?php if ($tags !== []): ?>
   <ul class="post-tags">
@@ -52,6 +61,7 @@ $this->start('content');
     <button class="upvote-button" type="button"
             data-uid="<?= e($post->uid) ?>"
             data-token="<?= e(Csrf::sign('upvote:' . $post->uid, 43200)) ?>"
+            aria-pressed="false"
             aria-label="<?= e(__('post.upvote_label')) ?>">
       <span class="upvote-icon" aria-hidden="true">▲</span>
       <span class="upvote-count"><?= e((string) $post->effectiveUpvotes()) ?></span>

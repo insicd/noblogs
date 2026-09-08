@@ -65,6 +65,30 @@ final class Upvote extends Model
         return $inserted;
     }
 
+    public static function isMarked(int $postId, string $hashId): bool
+    {
+        return (int) Database::instance()->fetchColumn(
+            'SELECT marked FROM {{upvotes}} WHERE post_id = ? AND hash_id = ?',
+            [$postId, $hashId]
+        ) === 1;
+    }
+
+    /** Promuove un voto marcato per errore a voto valido. */
+    public static function confirm(Post $post, string $hashId): bool
+    {
+        $updated = Database::instance()->query(
+            'UPDATE {{upvotes}} SET marked = 0, signals = NULL
+             WHERE post_id = ? AND hash_id = ? AND marked = 1',
+            [$post->id, $hashId]
+        )->rowCount() > 0;
+
+        if ($updated) {
+            $post->recalculateUpvotes();
+        }
+
+        return $updated;
+    }
+
     public static function remove(Post $post, string $hashId): bool
     {
         $deleted = Database::instance()->delete(

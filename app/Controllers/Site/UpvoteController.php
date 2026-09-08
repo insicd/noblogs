@@ -64,12 +64,27 @@ final class UpvoteController extends SiteController
         try {
             $ip = $this->request->ip();
             $hashId = Upvote::identify($ip);
+            $signals = $this->suspicionSignals();
 
             if (RateLimiter::tooManyAttempts('upvote:' . RateLimiter::hashIp($ip), 30, 300)) {
                 return Response::json(['error' => 'rate_limited'], 429)->noCache();
             }
 
             if (Upvote::exists($post->id, $hashId)) {
+                // Un voto marcato per un falso positivo (header assenti su
+                // hosting condiviso) va confermato, non cancellato: altrimenti
+                // il conteggio resta a zero e il pulsante sembra rotto.
+                if (Upvote::isMarked($post->id, $hashId) && $signals === []) {
+                    Upvote::confirm($post, $hashId);
+
+                    return Response::json([
+                        'count'   => $post->effectiveUpvotes(),
+                        'voted'   => true,
+                        'enabled' => true,
+                        'token'   => Csrf::sign('upvote:' . $post->uid, 43200),
+                    ])->noCache();
+                }
+
                 Upvote::remove($post, $hashId);
                 return Response::json([
                     'count'   => $post->effectiveUpvotes(),
@@ -79,9 +94,7 @@ final class UpvoteController extends SiteController
                 ])->noCache();
             }
 
-            // I voti sospetti vengono registrati ma non conteggiati: chi li invia
-            // vede il pulsante cambiare stato e non ha motivo di riprovare.
-            Upvote::cast($post, $hashId, $this->suspicionSignals());
+            Upvote::cast($post, $hashId, $signals);
 
             return Response::json([
                 'count'   => $post->effectiveUpvotes(),
@@ -104,16 +117,6 @@ final class UpvoteController extends SiteController
         // Il campo esca è invisibile: solo un programma lo compila.
         if (trim($this->request->input('website', '') ?? '') !== '') {
             $signals[] = 'honeypot';
-        }
-        // Lo script imposta questo campo dopo il primo movimento del puntatore.
-        if ($this->request->input('interacted') !== '1') {
-            $signals[] = 'no_interaction';
-        }
-        if ($this->request->userAgent() === '') {
-            $signals[] = 'no_user_agent';
-        }
-        if ($this->request->header('Sec-Fetch-Site') === null && $this->request->referrer() === '') {
-            $signals[] = 'no_origin';
         }
 
         return $signals;
