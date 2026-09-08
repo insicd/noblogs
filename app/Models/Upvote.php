@@ -23,6 +23,34 @@ final class Upvote extends Model
         return hash('sha256', $ip . '|' . gmdate('Y') . '|upvote|' . Config::get('security.analytics_salt', 'noblogs'));
     }
 
+    /** Crea la tabella se manca: installazioni vecchie possono non averla. */
+    public static function ensureTable(): void
+    {
+        static $ready = false;
+        if ($ready) {
+            return;
+        }
+        $ready = true;
+
+        $db = Database::instance();
+        if ($db->tableExists('upvotes')) {
+            return;
+        }
+
+        $db->query(
+            'CREATE TABLE IF NOT EXISTS {{upvotes}} (
+                `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+                `post_id` INT UNSIGNED NOT NULL,
+                `hash_id` CHAR(64) NOT NULL,
+                `marked` TINYINT(1) NOT NULL DEFAULT 0,
+                `signals` VARCHAR(255) DEFAULT NULL,
+                `created_at` DATETIME NOT NULL,
+                PRIMARY KEY (`id`),
+                UNIQUE KEY `uq_upvotes_post_hash` (`post_id`,`hash_id`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci'
+        );
+    }
+
     public static function exists(int $postId, string $hashId): bool
     {
         return Database::instance()->fetchColumn(
@@ -43,18 +71,22 @@ final class Upvote extends Model
      */
     public static function give(Post $post, string $hashId, bool $suspicious = false): void
     {
+        self::ensureTable();
+        $marked = $suspicious ? 1 : 0;
+        $signals = $suspicious ? 'honeypot' : null;
+
         Database::instance()->query(
             'INSERT INTO {{upvotes}} (post_id, hash_id, marked, signals, created_at)
              VALUES (?, ?, ?, ?, ?)
-             ON DUPLICATE KEY UPDATE
-                marked = VALUES(marked),
-                signals = VALUES(signals)',
+             ON DUPLICATE KEY UPDATE marked = ?, signals = ?',
             [
                 $post->id,
                 $hashId,
-                $suspicious ? 1 : 0,
-                $suspicious ? 'honeypot' : null,
+                $marked,
+                $signals,
                 self::now(),
+                $marked,
+                $signals,
             ]
         );
     }

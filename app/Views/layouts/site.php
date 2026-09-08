@@ -113,9 +113,11 @@ $js = static function (string $file): string {
   }
 
   const endpoint = (script.getAttribute('data-endpoint') || '').replace(/\/$/, '');
+  const uid = button.getAttribute('data-uid') || '';
   const countEl = widget.querySelector('.upvote-count');
   let token = button.getAttribute('data-token') || '';
   let busy = false;
+  let locked = false;
 
   const asCount = (value) => {
     const n = parseInt(String(value), 10);
@@ -132,43 +134,53 @@ $js = static function (string $file): string {
     button.disabled = false;
   };
 
+  const send = (fields) => {
+    const body = new URLSearchParams(fields);
+    const url = endpoint + '/' + encodeURIComponent(uid);
+    return fetch(url, {
+      method: 'POST',
+      credentials: 'same-origin',
+      cache: 'no-store',
+      headers: { Accept: 'application/json' },
+      body: body
+    }).then((response) => response.json().catch(() => null));
+  };
+
+  send({ op: 'status', uid: uid }).then((data) => {
+    if (locked || !data || data.error) {
+      return;
+    }
+    if (typeof data.token === 'string' && data.token !== '') {
+      token = data.token;
+      button.setAttribute('data-token', data.token);
+    }
+    paint(!!data.voted, asCount(data.count));
+  }).catch(() => {});
+
   button.addEventListener('click', () => {
-    if (busy || button.disabled || token === '' || endpoint === '') {
+    if (busy || button.disabled || token === '' || endpoint === '' || uid === '') {
       return;
     }
     busy = true;
+    locked = true;
 
     const wasVoted = button.getAttribute('aria-pressed') === 'true';
     const nextVoted = !wasVoted;
     const current = asCount(countEl ? countEl.textContent : '0') ?? 0;
     paint(nextVoted, current + (nextVoted ? 1 : -1));
 
-    const uid = button.getAttribute('data-uid') || '';
-    const body = new URLSearchParams();
-    body.set('uid', uid);
-    body.set('token', token);
-    body.set('voted', nextVoted ? '1' : '0');
-    body.set('website', '');
-
-    const url = endpoint + '/' + encodeURIComponent(uid)
-      + '?voted=' + (nextVoted ? '1' : '0')
-      + '&token=' + encodeURIComponent(token);
-
-    fetch(url, {
-      method: 'POST',
-      credentials: 'same-origin',
-      cache: 'no-store',
-      headers: {
-        Accept: 'application/json',
-        'Content-Type': 'application/x-www-form-urlencoded'
-      },
-      body: body.toString()
-    }).then((response) => response.json().catch(() => null)).then((data) => {
-      if (!data || typeof data !== 'object') {
-        return;
-      }
-      if (data.error || data.enabled === false) {
+    send({
+      op: 'set',
+      uid: uid,
+      token: token,
+      voted: nextVoted ? '1' : '0',
+      website: ''
+    }).then((data) => {
+      if (!data || typeof data !== 'object' || data.error) {
         paint(wasVoted, current);
+        if (data && data.error) {
+          button.title = String(data.error);
+        }
         return;
       }
       if (typeof data.token === 'string' && data.token !== '') {
@@ -176,9 +188,7 @@ $js = static function (string $file): string {
         button.setAttribute('data-token', data.token);
       }
       const count = asCount(data.count);
-      if (count !== null) {
-        paint(!!data.voted, count);
-      }
+      paint(!!data.voted, count !== null ? count : (nextVoted ? current + 1 : current));
     }).catch(() => {
       paint(wasVoted, current);
     }).then(() => {

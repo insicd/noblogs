@@ -47,14 +47,29 @@ final class UpvoteController extends SiteController
 
     public function toggle(?string $uid = null): Response
     {
-        if (!$this->blog->upvotes_active) {
-            return Response::json(['error' => 'disabled', 'enabled' => false], 403)->noCache();
-        }
+        Upvote::ensureTable();
 
         $uid = trim((string) ($uid ?? $this->request->input('uid', '') ?? ''));
         $post = $this->resolvePost($uid);
         if ($post === null) {
             return Response::json(['error' => 'not_found'], 404)->noCache();
+        }
+
+        $op = $this->request->input('op', '') ?? '';
+        if ($op === 'status') {
+            $hashId = Upvote::identify($this->request->ip());
+
+            return Response::json([
+                'count'   => $post->effectiveUpvotes(),
+                'voted'   => Upvote::isValid($post->id, $hashId),
+                'token'   => Csrf::sign('upvote:' . $post->uid, 43200),
+                'enabled' => $this->blog->upvotes_active,
+            ])->noCache()->noIndex()
+                ->withHeader('CDN-Cache-Control', 'no-store');
+        }
+
+        if (!$this->blog->upvotes_active) {
+            return Response::json(['error' => 'disabled', 'enabled' => false], 403)->noCache();
         }
 
         $signature = $this->request->input('token', '') ?? '';
@@ -85,6 +100,7 @@ final class UpvoteController extends SiteController
                 'count'   => $post->effectiveUpvotes(),
                 'voted'   => Upvote::isValid($post->id, $hashId),
                 'enabled' => true,
+                'ok'      => true,
                 'token'   => Csrf::sign('upvote:' . $post->uid, 43200),
             ])->noCache();
         } catch (\Throwable $e) {
