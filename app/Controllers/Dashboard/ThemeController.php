@@ -29,7 +29,7 @@ final class ThemeController extends DashboardController
             }
 
             $slug = $this->request->trimmed('theme');
-            if (!Theme::exists($slug)) {
+            if (!Theme::hasSlug($slug)) {
                 return $this->withInput($return, $this->request->post, __('theme.error.unknown'));
             }
 
