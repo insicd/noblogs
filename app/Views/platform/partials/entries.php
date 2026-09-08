@@ -21,11 +21,11 @@ $showDescription = $showDescription ?? true;
   ?>
   <li class="pf-entry">
     <h3 class="pf-entry-title">
-      <a href="<?= e(Url::post($blog, $post->slug)) ?>"><?= e($post->title) ?></a>
+      <a href="<?= e(Url::post($blog, $post->slug)) ?>" target="_blank" rel="noopener noreferrer"><?= e($post->title) ?></a>
     </h3>
 
     <p class="pf-entry-meta">
-      <a class="pf-entry-blog" href="<?= e(Url::blogRoot($blog)) ?>"><?= e($blog->title) ?></a>
+      <a class="pf-entry-blog" href="<?= e(Url::blogRoot($blog)) ?>" target="_blank" rel="noopener noreferrer"><?= e($blog->title) ?></a>
       <?php if ($published !== null): ?>
         <span aria-hidden="true">·</span>
         <time datetime="<?= e($published->format('c')) ?>"><?= e(Dates::format($published, 'j F Y', $blog->locale())) ?></time>

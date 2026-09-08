@@ -98,9 +98,9 @@ $this->start('content');
   <?php endif; ?>
 
   <p class="pf-discover-links">
-    <a href="<?= e(Url::to('/esplora/caso')) ?>"><?= e(__('discover.random')) ?></a>
+    <a href="<?= e(Url::to('/esplora/caso')) ?>" target="_blank" rel="noopener noreferrer"><?= e(__('discover.random')) ?></a>
     <span aria-hidden="true">·</span>
-    <a href="<?= e(Url::to('/esplora/caso-blog')) ?>"><?= e(__('discover.random_blog')) ?></a>
+    <a href="<?= e(Url::to('/esplora/caso-blog')) ?>" target="_blank" rel="noopener noreferrer"><?= e(__('discover.random_blog')) ?></a>
     <span aria-hidden="true">·</span>
     <a href="<?= e(Url::to('/esplora/feed')) ?>"><?= e(__('discover.feed')) ?></a>
   </p>
