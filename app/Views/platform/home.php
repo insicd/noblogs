@@ -17,10 +17,10 @@ $siteName = (string) ($siteName ?? Config::get('site.name', 'Noblogs'));
 $number = static fn(int $value): string => number_format($value, 0, ',', '.');
 
 $features = [
-    'privacy'  => '🔒',
-    'speed'    => '🪶',
-    'markdown' => '✎',
-    'yours'    => '📦',
+    'privacy'  => '>',
+    'speed'    => '>',
+    'markdown' => '>',
+    'yours'    => '>',
 ];
 
 $this->layout('layouts/platform');
