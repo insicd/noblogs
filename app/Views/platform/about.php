@@ -31,7 +31,7 @@ $this->start('content');
     dati su chi legge. Non serve niente di tutto questo per scrivere e per essere letti.
   </p>
   <p>
-    <?= e($siteName) ?> prende l'idea di <span lang="en">BearBlog</span> — un blog è un titolo, del
+    <?= e($siteName) ?> prende l'idea secondo cui — un blog è un titolo, del
     testo e un indirizzo — e la porta fino in fondo: nessun piano a pagamento, nessuna funzione
     riservata a chi paga, nessuna pubblicità. Il servizio costa poco da mantenere proprio perché
     fa poche cose.
@@ -71,7 +71,7 @@ $this->start('content');
     Versione in esecuzione: <code><?= e($version) ?></code>.
   </p>
   <p>
-    <a class="pf-button" href="<?= e((string) Config::get('site.source_url', 'https://noblogs.dev')) ?>" rel="noopener">Codice sorgente</a>
+    <a class="pf-button" href="<?= e((string) Config::get('site.source_url', 'https://https://github.com/insicd/noblogs')) ?>" rel="noopener" target="_blank">Codice sorgente</a>
   </p>
 
   <h2>Contatti</h2>

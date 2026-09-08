@@ -125,7 +125,7 @@ $navItems = [
         <li><a href="<?= e($link('/privacy')) ?>"><?= e(__('platform.footer.privacy')) ?></a></li>
         <li><a href="<?= e($link('/termini')) ?>"><?= e(__('platform.footer.terms')) ?></a></li>
         <li><a href="<?= e($link('/aiuto')) ?>"><?= e(__('platform.footer.help')) ?></a></li>
-        <li><a href="<?= e((string) Config::get('site.source_url', 'https://noblogs.dev')) ?>" rel="noopener"><?= e(__('platform.footer.source')) ?></a></li>
+        <li><a href="<?= e((string) Config::get('site.source_url', 'https://github.com/insicd/noblogs')) ?>" rel="noopener" target="_blank"><?= e(__('platform.footer.source')) ?></a></li>
       </ul>
     </nav>
     <p class="pf-footer-note"><?= e(__('platform.footer.no_tracking')) ?></p>
