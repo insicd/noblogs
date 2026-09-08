@@ -190,8 +190,14 @@ final class Database
 
     public function tableExists(string $table): bool
     {
-        $stmt = $this->pdo->prepare('SHOW TABLES LIKE ?');
+        // SHOW TABLES LIKE ? non è valido in MariaDB con prepared statement nativi.
+        $stmt = $this->pdo->prepare(
+            'SELECT 1 FROM information_schema.tables
+             WHERE table_schema = DATABASE() AND table_name = ?
+             LIMIT 1'
+        );
         $stmt->execute([$this->table($table)]);
+
         return $stmt->fetchColumn() !== false;
     }
 }

@@ -33,10 +33,6 @@ final class Upvote extends Model
         $ready = true;
 
         $db = Database::instance();
-        if ($db->tableExists('upvotes')) {
-            return;
-        }
-
         $db->query(
             'CREATE TABLE IF NOT EXISTS {{upvotes}} (
                 `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
