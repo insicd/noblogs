@@ -51,7 +51,7 @@ final class Upvote extends Model
         );
     }
 
-    public static function exists(int $postId, string $hashId): bool
+    public static function hasVote(int $postId, string $hashId): bool
     {
         return Database::instance()->fetchColumn(
             'SELECT 1 FROM {{upvotes}} WHERE post_id = ? AND hash_id = ?',
@@ -62,7 +62,7 @@ final class Upvote extends Model
     /** Voto presente e conteggiato (non marcato come sospetto). */
     public static function isValid(int $postId, string $hashId): bool
     {
-        return self::exists($postId, $hashId) && !self::isMarked($postId, $hashId);
+        return self::hasVote($postId, $hashId) && !self::isMarked($postId, $hashId);
     }
 
     /**
