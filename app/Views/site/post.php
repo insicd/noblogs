@@ -12,6 +12,7 @@ use Noblogs\Support\Dates;
 
 $showMeta = $showMeta ?? true;
 $showUpvote = $showUpvote ?? false;
+$upvotesEnabled = $upvotesEnabled ?? false;
 $isDraft = $isDraft ?? false;
 
 $this->layout('layouts/site');
@@ -46,7 +47,7 @@ $this->start('content');
 <?php endif; ?>
 
 <?php if ($showUpvote): ?>
-  <div class="upvote" hidden>
+  <div class="upvote"<?= $upvotesEnabled ? '' : ' hidden' ?>>
     <button class="upvote-button" type="button" data-uid="<?= e($post->uid) ?>"
             aria-label="<?= e(__('post.upvote_label')) ?>">
       <span class="upvote-icon" aria-hidden="true">▲</span>

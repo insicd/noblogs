@@ -1,18 +1,16 @@
 /**
  * Apprezzamenti.
  *
- * Il conteggio non è nell'HTML della pagina: arriva da una richiesta a parte,
- * così le pagine possono restare in cache per ore e il numero mostrato è
- * comunque quello di adesso. Lo stesso vale per l'opzione del blog: se gli
- * apprezzamenti sono spenti, questa richiesta lo dice e il pulsante resta
- * nascosto anche su una pagina già in cache.
- *
- * Senza questo file il pulsante resta nascosto e la pagina continua a funzionare.
+ * Il conteggio e lo stato (acceso/spento) arrivano da una richiesta a parte,
+ * così le pagine possono restare in cache. Questo file viene incluso nella
+ * pagina del post: se manca, il pulsante resta comunque visibile quando
+ * gli apprezzamenti sono accesi.
  */
 (() => {
   'use strict';
 
-  const script = document.querySelector('script[src*="/js/upvote.js"]');
+  const script = document.currentScript
+    || document.querySelector('script[data-endpoint][data-info]');
   const widget = document.querySelector('.upvote');
   const button = widget ? widget.querySelector('[data-uid]') : null;
 
@@ -82,8 +80,8 @@
 
   const info = infoUrl + (infoUrl.indexOf('?') === -1 ? '?' : '&') + '_=' + Date.now();
   request(info).then(apply).catch(() => {
-    // Senza il conteggio il pulsante resta nascosto: meglio niente che un
-    // numero sbagliato, o un pulsante su un blog che li ha disattivati.
+    // Se la richiesta fallisce il pulsante resta come è nell'HTML:
+    // visibile se gli apprezzamenti sono accesi, nascosto se sono spenti.
   });
 
   button.addEventListener('click', () => {
