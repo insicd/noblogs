@@ -250,7 +250,7 @@ return [
     'admin.settings.verify_email'           => 'Require email verification',
     'admin.settings.verify_email_hint'      => 'Without verification no blog can be created. It is the first barrier against automated sign-ups.',
     'admin.settings.review_blogs'           => 'Require review of new blogs',
-    'admin.settings.review_blogs_hint'      => 'New blogs stay out of search engines and out of the showcase until a moderator approves them. They remain readable to anyone with the address.',
+    'admin.settings.review_blogs_hint'      => 'New blogs stay out of search engines and out of the showcase until a moderator approves them. They remain readable to anyone with the address (via the path on the main domain, until the third-level host is created).',
 
     'admin.settings.blogs_per_user'      => 'Blogs per user',
     'admin.settings.blogs_per_user_hint' => 'Applies to new accounts; a single user\'s limit is changed from the Users page.',

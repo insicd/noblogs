@@ -250,7 +250,7 @@ return [
     'admin.settings.verify_email'           => 'Richiedi la verifica dell\'email',
     'admin.settings.verify_email_hint'      => 'Senza verifica non si possono creare blog. È la prima barriera contro le registrazioni automatiche.',
     'admin.settings.review_blogs'           => 'Richiedi la revisione dei nuovi blog',
-    'admin.settings.review_blogs_hint'      => 'I blog nuovi restano fuori dagli indici e dalla vetrina finché un moderatore non li approva. Restano comunque leggibili da chi ne ha l\'indirizzo.',
+    'admin.settings.review_blogs_hint'      => 'I blog nuovi restano fuori dagli indici e dalla vetrina finché un moderatore non li approva. Restano comunque leggibili da chi ne ha l\'indirizzo (via percorso sul dominio principale, finché il terzo livello non viene creato).',
 
     'admin.settings.blogs_per_user'      => 'Blog per utente',
     'admin.settings.blogs_per_user_hint' => 'Vale per i nuovi account; il limite di un singolo utente si cambia dalla pagina Utenti.',

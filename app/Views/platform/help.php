@@ -124,9 +124,10 @@ $this->start('content');
   <?php else: ?>
     <p>
       I blog restano raggiungibili anche come percorso del dominio principale
-      (<code><?= e($domain) ?>/ilmioblog/</code>): è una rete di sicurezza, ma l'indirizzo
-      canonico — quello nei feed, nella sitemap e nei tag <code>canonical</code> — è il
-      sottodominio.
+      (<code><?= e($domain) ?>/ilmioblog/</code>). Finché un blog non è approvato il terzo
+      livello non è ancora attivo: risponde solo il percorso. Dopo l'approvazione funzionano
+      entrambi, e l'indirizzo canonico — quello nei feed, nella sitemap e nei tag
+      <code>canonical</code> — è il sottodominio.
     </p>
   <?php endif; ?>
   <p>

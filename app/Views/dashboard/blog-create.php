@@ -51,6 +51,9 @@ $this->layout('layouts/dashboard');
         <span class="suffix">.<?= e($domain) ?></span>
       </div>
       <p class="hint"><?= e(__('blog.create.subdomain_hint')) ?></p>
+      <?php if (Url::pathFallbackActive()): ?>
+        <p class="hint"><?= e(__('blog.create.review_path_hint', ['domain' => $domain])) ?></p>
+      <?php endif; ?>
     </div>
 
     <p class="hint"><?= e(__('blog.create.quota', ['used' => $blogCount, 'max' => $maxBlogs])) ?></p>

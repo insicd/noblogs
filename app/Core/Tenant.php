@@ -167,7 +167,7 @@ final class Tenant
      * Segmenti riservati alla piattaforma: nessun blog può prevalere su
      * queste rotte, anche se qualcuno riuscisse a registrarne il nome.
      */
-    private static function isPlatformSegment(string $segment): bool
+    public static function isReservedSegment(string $segment): bool
     {
         static $reserved = [
             'accedi', 'esci', 'registrati', 'verifica-email', 'password',
@@ -176,6 +176,11 @@ final class Tenant
             'sitemap.xml', 'robots.txt', 'favicon.ico',
         ];
         return in_array(strtolower($segment), $reserved, true);
+    }
+
+    private static function isPlatformSegment(string $segment): bool
+    {
+        return self::isReservedSegment($segment);
     }
 
     /** Path del blog corrente ripulito dal prefisso del fallback su path. */

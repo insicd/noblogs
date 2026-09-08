@@ -78,7 +78,12 @@ $this->start('content');
     </p>
   </form>
 
-  <p class="pf-notice"><?= e(__('auth.register.review_notice')) ?></p>
+  <p class="pf-notice">
+    <?= e(__('auth.register.review_notice')) ?>
+    <?php if (Url::pathFallbackActive()): ?>
+      <?= e(__('auth.register.review_path_notice', ['domain' => $domain])) ?>
+    <?php endif; ?>
+  </p>
 
   <p class="pf-form-links">
     <?= e(__('auth.register.have_account')) ?>

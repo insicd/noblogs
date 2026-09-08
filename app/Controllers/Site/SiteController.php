@@ -57,7 +57,8 @@ abstract class SiteController extends Controller
             'trackPath'   => null,
         ];
 
-        $response = Response::html(View::make($template, $data + ['tenant' => $this->tenant]), $status);
+        $html = Url::localizeHtml(View::make($template, $data + ['tenant' => $this->tenant]));
+        $response = Response::html($html, $status);
 
         return $status === 200
             ? $this->applyPublicCache($response)

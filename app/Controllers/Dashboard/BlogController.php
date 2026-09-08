@@ -67,10 +67,14 @@ final class BlogController extends DashboardController
                 Blog::starterContent($title, $user->locale)
             );
 
-            return $this->succeed(
-                $this->blogUrl($blog),
-                __('blog.create.done', ['address' => Url::blogRoot($blog)])
-            );
+            $done = Url::pathUntilReview($blog)
+                ? __('blog.create.done_pending', [
+                    'path'      => Url::pathRoot($blog),
+                    'subdomain' => Url::subdomainRoot($blog),
+                ])
+                : __('blog.create.done', ['address' => Url::blogRoot($blog)]);
+
+            return $this->succeed($this->blogUrl($blog), $done);
         }
 
         return $this->panel('dashboard/blog-create', [

@@ -76,9 +76,7 @@ $this->layout('layouts/dashboard');
           <a href="<?= e(Url::to('/dashboard/' . $blog->subdomain . '/impostazioni')) ?>"><?= e(__('dashboard.nav.settings')) ?></a>
         </p>
 
-        <?php if (!$blog->isIndexable()): ?>
-          <p class="note"><?= e(__('dashboard.pending_review')) ?></p>
-        <?php endif; ?>
+        <?php $this->partial('dashboard/partials/pending-review', ['blog' => $blog]); ?>
       </li>
     <?php endforeach; ?>
   </ul>

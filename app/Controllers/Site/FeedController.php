@@ -124,14 +124,7 @@ final class FeedController extends SiteController
      */
     private function contentFor(Post $post): string
     {
-        $html = Renderer::post($this->blog, $post);
-        $root = rtrim(Url::blogRoot($this->blog), '/');
-
-        return preg_replace_callback(
-            '/\b(href|src)="\/([^"]*)"/i',
-            static fn(array $m): string => $m[1] . '="' . $root . '/' . $m[2] . '"',
-            $html
-        ) ?? $html;
+        return Url::absolutizeHtml(Renderer::post($this->blog, $post));
     }
 
     private function contentForCdata(Post $post): string

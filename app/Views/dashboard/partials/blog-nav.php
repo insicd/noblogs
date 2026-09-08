@@ -51,7 +51,5 @@ $tools = [
     <li><a href="<?= e(Url::to($base . '/esporta')) ?>"><?= e(__('dashboard.nav.export')) ?></a></li>
   </ul>
 
-  <?php if (!$blog->isIndexable()): ?>
-    <p class="dash-side-note"><?= e(__('dashboard.pending_review')) ?></p>
-  <?php endif; ?>
+  <?php $this->partial('dashboard/partials/pending-review', ['blog' => $blog, 'class' => 'dash-side-note']); ?>
 </nav>
