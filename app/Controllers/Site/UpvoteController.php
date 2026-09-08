@@ -45,13 +45,14 @@ final class UpvoteController extends SiteController
         }
     }
 
-    public function toggle(): Response
+    public function toggle(?string $uid = null): Response
     {
         if (!$this->blog->upvotes_active) {
             return Response::json(['error' => 'disabled', 'enabled' => false], 403)->noCache();
         }
 
-        $post = $this->resolvePost(trim($this->request->input('uid', '') ?? ''));
+        $uid = trim((string) ($uid ?? $this->request->input('uid', '') ?? ''));
+        $post = $this->resolvePost($uid);
         if ($post === null) {
             return Response::json(['error' => 'not_found'], 404)->noCache();
         }
@@ -64,23 +65,21 @@ final class UpvoteController extends SiteController
         try {
             $ip = $this->request->ip();
             $hashId = Upvote::identify($ip);
-            $signals = $this->suspicionSignals();
 
             if (RateLimiter::tooManyAttempts('upvote:' . RateLimiter::hashIp($ip), 30, 300)) {
                 return Response::json(['error' => 'rate_limited'], 429)->noCache();
             }
 
             $wantVote = $this->request->boolean('voted');
+            $honeypot = trim($this->request->input('website', '') ?? '') !== '';
 
             if ($wantVote) {
-                if (Upvote::isMarked($post->id, $hashId)) {
-                    Upvote::confirm($post, $hashId);
-                } elseif (!Upvote::exists($post->id, $hashId)) {
-                    Upvote::cast($post, $hashId, $signals);
-                }
-            } elseif (Upvote::exists($post->id, $hashId)) {
+                Upvote::give($post, $hashId, $honeypot);
+            } else {
                 Upvote::remove($post, $hashId);
             }
+
+            $post->recalculateUpvotes();
 
             return Response::json([
                 'count'   => $post->effectiveUpvotes(),
@@ -93,19 +92,6 @@ final class UpvoteController extends SiteController
 
             return Response::json(['error' => 'unavailable'], 500)->noCache();
         }
-    }
-
-    /** @return list<string> */
-    private function suspicionSignals(): array
-    {
-        $signals = [];
-
-        // Il campo esca è invisibile: solo un programma lo compila.
-        if (trim($this->request->input('website', '') ?? '') !== '') {
-            $signals[] = 'honeypot';
-        }
-
-        return $signals;
     }
 
     private function resolvePost(string $uid): ?Post

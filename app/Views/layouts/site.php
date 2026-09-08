@@ -100,29 +100,22 @@ $js = static function (string $file): string {
 <script src="<?= e($js('hit.js')) ?>" data-endpoint="<?= e(Url::site('/hit')) ?>" data-uid="<?= e($trackPath) ?>" defer></script>
 <?php endif; ?>
 <?php if (!empty($showUpvote)): ?>
-<script data-endpoint="<?= e(Url::site('/upvote')) ?>" data-info="<?= e(Url::site('/upvote') . '?uid=' . rawurlencode($post->uid)) ?>">
+<script data-endpoint="<?= e(Url::site('/upvote')) ?>">
 (() => {
   'use strict';
 
   const script = document.currentScript
-    || document.querySelector('script[data-endpoint][data-info]');
+    || document.querySelector('script[data-endpoint]');
   const widget = document.querySelector('.upvote');
   const button = widget ? widget.querySelector('[data-uid]') : null;
-
   if (!script || !widget || !button) {
     return;
   }
 
-  const endpoint = script.getAttribute('data-endpoint');
-  if (!endpoint) {
-    return;
-  }
-
-  const infoUrl = script.getAttribute('data-info');
+  const endpoint = (script.getAttribute('data-endpoint') || '').replace(/\/$/, '');
   const countEl = widget.querySelector('.upvote-count');
   let token = button.getAttribute('data-token') || '';
   let busy = false;
-  let settled = false;
 
   const asCount = (value) => {
     const n = parseInt(String(value), 10);
@@ -139,79 +132,58 @@ $js = static function (string $file): string {
     button.disabled = false;
   };
 
-  const apply = (data) => {
-    if (!data || typeof data !== 'object') {
-      return false;
-    }
-    if (data.enabled === false || data.error === 'disabled') {
-      widget.hidden = true;
-      button.disabled = true;
-      return false;
-    }
-    if (data.error) {
-      return false;
-    }
-    if (typeof data.token === 'string' && data.token !== '') {
-      token = data.token;
-      button.setAttribute('data-token', data.token);
-    }
-    paint(!!data.voted, asCount(data.count));
-    return true;
-  };
-
-  const request = (url, options) => fetch(url, Object.assign({
-    credentials: 'same-origin',
-    cache: 'no-store',
-    headers: { Accept: 'application/json' }
-  }, options)).then((response) => response.json().catch(() => null));
-
-  if (infoUrl) {
-    const info = infoUrl + (infoUrl.indexOf('?') === -1 ? '?' : '&') + '_=' + Date.now();
-    request(info).then((data) => {
-      if (!settled) {
-        apply(data);
-      }
-    }).catch(() => {});
-  }
-
   button.addEventListener('click', () => {
-    if (busy || button.disabled || token === '' || !endpoint) {
+    if (busy || button.disabled || token === '' || endpoint === '') {
       return;
     }
     busy = true;
-    settled = true;
-    button.disabled = true;
 
     const wasVoted = button.getAttribute('aria-pressed') === 'true';
     const nextVoted = !wasVoted;
     const current = asCount(countEl ? countEl.textContent : '0') ?? 0;
     paint(nextVoted, current + (nextVoted ? 1 : -1));
 
+    const uid = button.getAttribute('data-uid') || '';
     const body = new URLSearchParams();
-    body.set('uid', button.getAttribute('data-uid') || '');
+    body.set('uid', uid);
     body.set('token', token);
     body.set('voted', nextVoted ? '1' : '0');
-    body.set('interacted', '1');
     body.set('website', '');
 
-    request(endpoint, {
+    const url = endpoint + '/' + encodeURIComponent(uid)
+      + '?voted=' + (nextVoted ? '1' : '0')
+      + '&token=' + encodeURIComponent(token);
+
+    fetch(url, {
       method: 'POST',
+      credentials: 'same-origin',
+      cache: 'no-store',
       headers: {
         Accept: 'application/json',
         'Content-Type': 'application/x-www-form-urlencoded'
       },
       body: body.toString()
-    }).then((data) => {
-      if (!apply(data)) {
+    }).then((response) => response.json().catch(() => null)).then((data) => {
+      if (!data || typeof data !== 'object') {
+        return;
+      }
+      if (data.error || data.enabled === false) {
         paint(wasVoted, current);
+        return;
+      }
+      if (typeof data.token === 'string' && data.token !== '') {
+        token = data.token;
+        button.setAttribute('data-token', data.token);
+      }
+      const count = asCount(data.count);
+      if (count !== null) {
+        paint(!!data.voted, count);
       }
     }).catch(() => {
       paint(wasVoted, current);
     }).then(() => {
       busy = false;
-      if (!widget.hidden) {
-        button.disabled = false;
-      }
+      button.disabled = false;
     });
   });
 })();

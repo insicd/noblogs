@@ -38,9 +38,29 @@ final class Upvote extends Model
     }
 
     /**
-     * Registra un voto. Restituisce false se era già presente.
-     *
-     * @param list<string> $signals Indizi di automazione raccolti dal controller.
+     * Mette un voto conteggiato. Se la riga c'è già (anche marcata per errore)
+     * la promuove a voto valido.
+     */
+    public static function give(Post $post, string $hashId, bool $suspicious = false): void
+    {
+        Database::instance()->query(
+            'INSERT INTO {{upvotes}} (post_id, hash_id, marked, signals, created_at)
+             VALUES (?, ?, ?, ?, ?)
+             ON DUPLICATE KEY UPDATE
+                marked = VALUES(marked),
+                signals = VALUES(signals)',
+            [
+                $post->id,
+                $hashId,
+                $suspicious ? 1 : 0,
+                $suspicious ? 'honeypot' : null,
+                self::now(),
+            ]
+        );
+    }
+
+    /**
+     * @param list<string> $signals
      */
     public static function cast(Post $post, string $hashId, array $signals = []): bool
     {

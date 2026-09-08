@@ -69,7 +69,7 @@ function registerSiteRoutes(Router $router, Tenant $tenant): void
     $router->get('/disiscriviti', [Site\SubscribeController::class, 'unsubscribe']);
 
     $router->post('/hit', [Site\AnalyticsController::class, 'record']);
-    $router->get('/upvote', [Site\UpvoteController::class, 'info']);
+    $router->post('/upvote/{uid}', [Site\UpvoteController::class, 'toggle']);
     $router->post('/upvote', [Site\UpvoteController::class, 'toggle']);
     $router->get('/upvote-info/{uid}', [Site\UpvoteController::class, 'info']);
 

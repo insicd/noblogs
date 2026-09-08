@@ -74,13 +74,31 @@ final class Request
             || ($_SERVER['SERVER_PORT'] ?? null) == 443
             || strtolower($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '') === 'https';
 
+        $method = strtoupper((string) ($_SERVER['REQUEST_METHOD'] ?? 'GET'));
+        $post = $_POST;
+        // Alcuni hosting (CGI/FastCGI) lasciano $_POST vuoto: il corpo c'è
+        // comunque in php://input e senza questo i voti e gli hit non arrivano.
+        if ($post === [] && $method === 'POST') {
+            $type = strtolower((string) ($_SERVER['CONTENT_TYPE'] ?? ''));
+            if ($type === '' || str_contains($type, 'application/x-www-form-urlencoded')) {
+                $raw = file_get_contents('php://input');
+                if (is_string($raw) && $raw !== '') {
+                    $parsed = [];
+                    parse_str($raw, $parsed);
+                    if (is_array($parsed) && $parsed !== []) {
+                        $post = $parsed;
+                    }
+                }
+            }
+        }
+
         return new self(
-            $_SERVER['REQUEST_METHOD'] ?? 'GET',
+            $method,
             $host,
             $path,
             $secure,
             $_GET,
-            $_POST,
+            $post,
             $_FILES,
             array_map('strval', $_COOKIE)
         );
