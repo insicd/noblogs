@@ -104,7 +104,7 @@ final class Hit extends Model
         }
 
         $rows = Database::instance()->fetchAll(
-            "SELECT hit_date, COUNT(*) AS reads, COUNT(DISTINCT hash_id) AS visitors
+            "SELECT hit_date, COUNT(*) AS `reads`, COUNT(DISTINCT hash_id) AS visitors
              FROM {{hits}}
              WHERE blog_id = :blog_id AND hit_date >= :from $filter
              GROUP BY hit_date ORDER BY hit_date ASC",
@@ -143,7 +143,7 @@ final class Hit extends Model
         }
 
         $row = Database::instance()->fetch(
-            "SELECT COUNT(*) AS reads, COUNT(DISTINCT hash_id) AS visitors
+            "SELECT COUNT(*) AS `reads`, COUNT(DISTINCT hash_id) AS visitors
              FROM {{hits}} WHERE blog_id = :blog_id AND hit_date >= :from $filter",
             $params
         );
@@ -162,13 +162,13 @@ final class Hit extends Model
     public static function topPosts(Blog $blog, int $days, int $limit = 50): array
     {
         $rows = Database::instance()->fetchAll(
-            'SELECT h.post_id, COUNT(*) AS reads, COUNT(DISTINCT h.hash_id) AS visitors,
+            'SELECT h.post_id, COUNT(*) AS `reads`, COUNT(DISTINCT h.hash_id) AS visitors,
                     p.title, p.slug, p.upvotes
              FROM {{hits}} h
              LEFT JOIN {{posts}} p ON p.id = h.post_id
              WHERE h.blog_id = :blog_id AND h.hit_date >= :from
              GROUP BY h.post_id, p.title, p.slug, p.upvotes
-             ORDER BY reads DESC
+             ORDER BY `reads` DESC
              LIMIT ' . max(1, $limit),
             ['blog_id' => $blog->id, 'from' => gmdate('Y-m-d', time() - ($days - 1) * 86400)]
         );
@@ -195,11 +195,11 @@ final class Hit extends Model
         }
 
         $rows = Database::instance()->fetchAll(
-            "SELECT `$dimension` AS label, COUNT(*) AS reads
+            "SELECT `$dimension` AS label, COUNT(*) AS `reads`
              FROM {{hits}}
              WHERE blog_id = :blog_id AND hit_date >= :from AND `$dimension` IS NOT NULL AND `$dimension` <> ''
              GROUP BY `$dimension`
-             ORDER BY reads DESC
+             ORDER BY `reads` DESC
              LIMIT " . max(1, $limit),
             ['blog_id' => $blog->id, 'from' => gmdate('Y-m-d', time() - ($days - 1) * 86400)]
         );
