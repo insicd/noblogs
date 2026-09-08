@@ -20,24 +20,29 @@ use Noblogs\Models\Upvote;
 final class UpvoteController extends SiteController
 {
     /** Stato del voto per il visitatore corrente. */
-    public function info(string $uid): Response
+    public function info(?string $uid = null): Response
     {
+        $uid = trim((string) ($uid ?? $this->request->query('uid') ?? ''));
         $post = $this->resolvePost($uid);
         if ($post === null) {
             return Response::json(['error' => 'not_found'], 404)->noCache()->noIndex();
         }
 
-        $hashId = Upvote::identify($this->request->ip());
+        try {
+            $hashId = Upvote::identify($this->request->ip());
 
-        return Response::json([
-            'count'   => $post->effectiveUpvotes(),
-            'voted'   => Upvote::exists($post->id, $hashId),
-            // Token a breve scadenza legato al post e all'identità: rende
-            // inutile riusare una richiesta catturata altrove.
-            'token'   => Csrf::sign('upvote:' . $post->uid . ':' . $hashId, 43200),
-            'enabled' => $this->blog->upvotes_active,
-        ])->noCache()->noIndex()
-            ->withHeader('CDN-Cache-Control', 'no-store');
+            return Response::json([
+                'count'   => $post->effectiveUpvotes(),
+                'voted'   => Upvote::exists($post->id, $hashId),
+                'token'   => Csrf::sign('upvote:' . $post->uid, 43200),
+                'enabled' => $this->blog->upvotes_active,
+            ])->noCache()->noIndex()
+                ->withHeader('CDN-Cache-Control', 'no-store');
+        } catch (\Throwable $e) {
+            \Noblogs\Core\ErrorHandler::log($e);
+
+            return Response::json(['error' => 'unavailable'], 500)->noCache();
+        }
     }
 
     public function toggle(): Response
@@ -51,36 +56,44 @@ final class UpvoteController extends SiteController
             return Response::json(['error' => 'not_found'], 404)->noCache();
         }
 
-        $ip = $this->request->ip();
-        $hashId = Upvote::identify($ip);
-
-        if (RateLimiter::tooManyAttempts('upvote:' . RateLimiter::hashIp($ip), 30, 300)) {
-            return Response::json(['error' => 'rate_limited'], 429)->noCache();
-        }
-
         $signature = $this->request->input('token', '') ?? '';
-        if (!Csrf::verifySigned('upvote:' . $post->uid . ':' . $hashId, $signature)) {
+        if (!Csrf::verifySigned('upvote:' . $post->uid, $signature)) {
             return Response::json(['error' => 'invalid_token'], 400)->noCache();
         }
 
-        if (Upvote::exists($post->id, $hashId)) {
-            Upvote::remove($post, $hashId);
+        try {
+            $ip = $this->request->ip();
+            $hashId = Upvote::identify($ip);
+
+            if (RateLimiter::tooManyAttempts('upvote:' . RateLimiter::hashIp($ip), 30, 300)) {
+                return Response::json(['error' => 'rate_limited'], 429)->noCache();
+            }
+
+            if (Upvote::exists($post->id, $hashId)) {
+                Upvote::remove($post, $hashId);
+                return Response::json([
+                    'count'   => $post->effectiveUpvotes(),
+                    'voted'   => false,
+                    'enabled' => true,
+                    'token'   => Csrf::sign('upvote:' . $post->uid, 43200),
+                ])->noCache();
+            }
+
+            // I voti sospetti vengono registrati ma non conteggiati: chi li invia
+            // vede il pulsante cambiare stato e non ha motivo di riprovare.
+            Upvote::cast($post, $hashId, $this->suspicionSignals());
+
             return Response::json([
                 'count'   => $post->effectiveUpvotes(),
-                'voted'   => false,
+                'voted'   => true,
                 'enabled' => true,
+                'token'   => Csrf::sign('upvote:' . $post->uid, 43200),
             ])->noCache();
+        } catch (\Throwable $e) {
+            \Noblogs\Core\ErrorHandler::log($e);
+
+            return Response::json(['error' => 'unavailable'], 500)->noCache();
         }
-
-        // I voti sospetti vengono registrati ma non conteggiati: chi li invia
-        // vede il pulsante cambiare stato e non ha motivo di riprovare.
-        Upvote::cast($post, $hashId, $this->suspicionSignals());
-
-        return Response::json([
-            'count'   => $post->effectiveUpvotes(),
-            'voted'   => true,
-            'enabled' => true,
-        ])->noCache();
     }
 
     /** @return list<string> */

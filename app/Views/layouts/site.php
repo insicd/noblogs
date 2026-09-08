@@ -100,7 +100,7 @@ $js = static function (string $file): string {
 <script src="<?= e($js('hit.js')) ?>" data-endpoint="<?= e(Url::site('/hit')) ?>" data-uid="<?= e($trackPath) ?>" defer></script>
 <?php endif; ?>
 <?php if (!empty($showUpvote)): ?>
-<script data-endpoint="<?= e(Url::site('/upvote')) ?>" data-info="<?= e(Url::site('/upvote-info/' . $post->uid)) ?>">
+<script data-endpoint="<?= e(Url::site('/upvote')) ?>" data-info="<?= e(Url::site('/upvote') . '?uid=' . rawurlencode($post->uid)) ?>">
 <?php
     $upvoteJs = NOBLOGS_PUBLIC . '/assets/js/upvote.js';
     if (is_file($upvoteJs)) {

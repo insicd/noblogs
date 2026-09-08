@@ -1,10 +1,9 @@
 /**
  * Apprezzamenti.
  *
- * Il conteggio e lo stato (acceso/spento) arrivano da una richiesta a parte,
- * così le pagine possono restare in cache. Questo file viene incluso nella
- * pagina del post: se manca, il pulsante resta comunque visibile quando
- * gli apprezzamenti sono accesi.
+ * Il token sta già sul pulsante, così il clic funziona anche se la richiesta
+ * di stato non arriva. Quella richiesta serve solo ad aggiornare il conteggio
+ * e a marcare il pulsante se hai già votato.
  */
 (() => {
   'use strict';
@@ -20,12 +19,12 @@
 
   const endpoint = script.getAttribute('data-endpoint');
   const infoUrl = script.getAttribute('data-info');
-  if (!endpoint || !infoUrl) {
+  if (!endpoint) {
     return;
   }
 
   const countEl = widget.querySelector('.upvote-count');
-  let token = '';
+  let token = button.getAttribute('data-token') || '';
   let interacted = false;
   let busy = false;
 
@@ -45,44 +44,50 @@
     button.removeAttribute('aria-pressed');
   };
 
+  const asCount = (value) => {
+    const n = Number(value);
+    return Number.isFinite(n) ? n : null;
+  };
+
   const apply = (data) => {
     if (!data || typeof data !== 'object') {
-      return;
+      return false;
     }
     if (data.enabled === false || data.error === 'disabled') {
       hide();
-      return;
+      return false;
     }
     if (data.error) {
-      return;
+      return false;
     }
-    if (countEl && typeof data.count === 'number') {
-      countEl.textContent = String(data.count);
+    const count = asCount(data.count);
+    if (countEl && count !== null) {
+      countEl.textContent = String(count);
     }
-    if (typeof data.token === 'string') {
+    if (typeof data.token === 'string' && data.token !== '') {
       token = data.token;
+      button.setAttribute('data-token', data.token);
     }
     const voted = !!data.voted;
     button.setAttribute('aria-pressed', voted ? 'true' : 'false');
     widget.classList.toggle('is-voted', voted);
     widget.hidden = false;
     button.disabled = false;
+    return true;
   };
 
   const request = (url, options) => fetch(url, Object.assign({
-    credentials: 'omit',
+    credentials: 'same-origin',
     cache: 'no-store',
     headers: {
-      Accept: 'application/json',
-      'X-Requested-With': 'XMLHttpRequest'
+      Accept: 'application/json'
     }
   }, options)).then((response) => response.json().catch(() => null));
 
-  const info = infoUrl + (infoUrl.indexOf('?') === -1 ? '?' : '&') + '_=' + Date.now();
-  request(info).then(apply).catch(() => {
-    // Se la richiesta fallisce il pulsante resta come è nell'HTML:
-    // visibile se gli apprezzamenti sono accesi, nascosto se sono spenti.
-  });
+  if (infoUrl) {
+    const info = infoUrl + (infoUrl.indexOf('?') === -1 ? '?' : '&') + '_=' + Date.now();
+    request(info).then(apply).catch(() => {});
+  }
 
   button.addEventListener('click', () => {
     if (busy || button.disabled || token === '') {
@@ -101,17 +106,18 @@
       method: 'POST',
       headers: {
         Accept: 'application/json',
-        'Content-Type': 'application/x-www-form-urlencoded',
-        'X-Requested-With': 'XMLHttpRequest'
+        'Content-Type': 'application/x-www-form-urlencoded'
       },
       body: body.toString()
     }).then((data) => {
-      apply(data);
+      if (!apply(data)) {
+        button.disabled = false;
+      }
     }).catch(() => {
-      // Niente: il prossimo clic ritenterà con lo stesso token.
+      button.disabled = false;
     }).then(() => {
       busy = false;
-      if (!widget.hidden && button.getAttribute('aria-pressed') !== null) {
+      if (!widget.hidden) {
         button.disabled = false;
       }
     });

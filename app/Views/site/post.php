@@ -6,6 +6,7 @@
  * @var string                $contentHtml
  */
 
+use Noblogs\Core\Csrf;
 use Noblogs\Core\Url;
 use Noblogs\Markdown\Renderer;
 use Noblogs\Support\Dates;
@@ -48,7 +49,9 @@ $this->start('content');
 
 <?php if ($showUpvote): ?>
   <div class="upvote"<?= $upvotesEnabled ? '' : ' hidden' ?>>
-    <button class="upvote-button" type="button" data-uid="<?= e($post->uid) ?>"
+    <button class="upvote-button" type="button"
+            data-uid="<?= e($post->uid) ?>"
+            data-token="<?= e(Csrf::sign('upvote:' . $post->uid, 43200)) ?>"
             aria-label="<?= e(__('post.upvote_label')) ?>">
       <span class="upvote-icon" aria-hidden="true">▲</span>
       <span class="upvote-count"><?= e((string) $post->effectiveUpvotes()) ?></span>
