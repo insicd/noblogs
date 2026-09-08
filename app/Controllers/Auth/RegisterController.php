@@ -181,6 +181,7 @@ final class RegisterController extends Controller
         }
 
         [$user, $blog] = $created;
+        $blog->notifyPendingReview($user);
 
         if ($user->verify_token !== null) {
             $this->sendVerification($user, $blog);

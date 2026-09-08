@@ -132,6 +132,11 @@ return [
 
     'admin.blogs.error.not_found' => 'Questo blog non esiste più.',
 
+    'admin.review.email_subject' => 'Nuovo blog in attesa di approvazione: :title',
+    'admin.review.email_body'    => "È stato creato un nuovo blog su :site, in attesa di approvazione.\n\nTitolo: :title\nAccount: :email\nRaggiungibile ora: :path\nDopo l'approvazione: :subdomain\n\nApri il blog:\n:blog_url\n\nCoda di revisione:\n:admin_url\n",
+    'admin.review.approved_email_subject' => 'Blog approvato: :title',
+    'admin.review.approved_email_body'    => "Hai approvato il blog «:title» su :site. Il dominio di terzo livello è attivo.\n\nTerzo livello: :subdomain\nPercorso (resta valido): :path\nAccount: :email\n",
+
     'admin.blogs.delete.title'          => 'Elimina :blog',
     'admin.blogs.delete.heading'        => 'Stai per eliminare «:blog»',
     'admin.blogs.delete.warning'        => 'L\'operazione è definitiva e non si può annullare. Spariscono i contenuti, i file caricati, le statistiche e gli iscritti.',
@@ -243,7 +248,7 @@ return [
     'admin.settings.tagline'            => 'Motto',
     'admin.settings.tagline_hint'       => 'Una riga sotto il nome, nella pagina iniziale e nei metadati.',
     'admin.settings.contact_email'      => 'Email di contatto',
-    'admin.settings.contact_email_hint' => 'Mostrata nelle pagine pubbliche a chi deve segnalare un abuso. Lasciala vuota per non pubblicarla.',
+    'admin.settings.contact_email_hint' => 'Mostrata nelle pagine pubbliche a chi deve segnalare un abuso, e usata per avvisarti quando un blog nuovo è in attesa di approvazione e quando lo approvi (conferma del terzo livello). Lasciala vuota per non pubblicarla: in quel caso vale l\'indirizzo di config/config.php.',
 
     'admin.settings.registration_open'      => 'Registrazioni aperte',
     'admin.settings.registration_open_hint' => 'Togliendo la spunta il modulo di registrazione resta raggiungibile ma rifiuta i nuovi account. Gli account esistenti non sono toccati.',

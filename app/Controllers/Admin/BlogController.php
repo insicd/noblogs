@@ -125,6 +125,8 @@ final class BlogController extends AdminController
             return $this->destroy($blog, $note);
         }
 
+        $wasPending = !$blog->reviewed;
+
         // La nota del moderatore resta attaccata al blog solo per le decisioni
         // che l'autore deve poter capire; le altre finiscono solo nel registro.
         $reviewerNote = $note !== '' ? $note : null;
@@ -139,6 +141,10 @@ final class BlogController extends AdminController
             'revoca-html'          => ['allow_raw_html' => false],
             default                => [],
         });
+
+        if ($action === 'approva' && $wasPending) {
+            $blog->notifyApproved($blog->owner());
+        }
 
         $this->record($blog->id, $action, $note);
 

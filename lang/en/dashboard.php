@@ -79,6 +79,8 @@ return [
     'blog.create.quota'             => 'Blogs used: :used of :max.',
     'blog.create.done'              => 'Your blog is ready: :address',
     'blog.create.done_pending'      => 'Your blog is ready. Until we approve it, it is reachable only at :path; after approval it will also be at :subdomain.',
+    'blog.approved.email_subject'   => 'Your blog on :site is now also at :subdomain',
+    'blog.approved.email_body'      => "The blog “:title” has been approved.\n\nIt is now also reachable at the third-level address:\n:subdomain\n\nIt still works at:\n:path\n\nDashboard:\n:dashboard\n",
 
     // Blog homepage
     'blog.content.title'         => 'Homepage',

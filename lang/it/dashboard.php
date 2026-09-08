@@ -80,6 +80,8 @@ return [
     'blog.create.quota'             => 'Blog usati: :used su :max.',
     'blog.create.done'              => 'Il blog è pronto: :address',
     'blog.create.done_pending'      => 'Il blog è pronto. Finché non lo approviamo è raggiungibile solo da :path; dopo l\'approvazione sarà anche su :subdomain.',
+    'blog.approved.email_subject'   => 'Il tuo blog su :site è online anche su :subdomain',
+    'blog.approved.email_body'      => "Il blog «:title» è stato approvato.\n\nDa ora è raggiungibile anche all'indirizzo di terzo livello:\n:subdomain\n\nContinua a funzionare anche da:\n:path\n\nPannello:\n:dashboard\n",
 
     // Homepage del blog
     'blog.content.title'         => 'Homepage',

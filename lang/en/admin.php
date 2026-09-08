@@ -132,6 +132,11 @@ return [
 
     'admin.blogs.error.not_found' => 'This blog no longer exists.',
 
+    'admin.review.email_subject' => 'New blog awaiting approval: :title',
+    'admin.review.email_body'    => "A new blog was created on :site and is awaiting approval.\n\nTitle: :title\nAccount: :email\nReachable now: :path\nAfter approval: :subdomain\n\nOpen the blog:\n:blog_url\n\nReview queue:\n:admin_url\n",
+    'admin.review.approved_email_subject' => 'Blog approved: :title',
+    'admin.review.approved_email_body'    => "You approved the blog “:title” on :site. The third-level host is now active.\n\nThird-level: :subdomain\nPath (still valid): :path\nAccount: :email\n",
+
     'admin.blogs.delete.title'            => 'Delete :blog',
     'admin.blogs.delete.heading'          => 'You are about to delete «:blog»',
     'admin.blogs.delete.warning'          => 'This cannot be undone. Content, uploaded files, analytics and subscribers all go away.',
@@ -243,7 +248,7 @@ return [
     'admin.settings.tagline'            => 'Tagline',
     'admin.settings.tagline_hint'       => 'One line under the name, on the landing page and in the metadata.',
     'admin.settings.contact_email'      => 'Contact email',
-    'admin.settings.contact_email_hint' => 'Shown on public pages to whoever needs to report abuse. Leave empty not to publish it.',
+    'admin.settings.contact_email_hint' => 'Shown on public pages to whoever needs to report abuse, and used to notify you when a new blog is awaiting approval and when you approve it (confirmation of the third-level host). Leave empty not to publish it: the address in config/config.php is used instead.',
 
     'admin.settings.registration_open'      => 'Registrations open',
     'admin.settings.registration_open_hint' => 'Unchecked, the sign-up form stays reachable but refuses new accounts. Existing accounts are untouched.',

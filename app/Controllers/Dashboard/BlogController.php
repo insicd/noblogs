@@ -66,6 +66,7 @@ final class BlogController extends DashboardController
                 $title,
                 Blog::starterContent($title, $user->locale)
             );
+            $blog->notifyPendingReview($user);
 
             $done = Url::pathUntilReview($blog)
                 ? __('blog.create.done_pending', [

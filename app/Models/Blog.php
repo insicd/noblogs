@@ -6,6 +6,8 @@ namespace Noblogs\Models;
 
 use Noblogs\Core\Config;
 use Noblogs\Core\I18n;
+use Noblogs\Core\Mailer;
+use Noblogs\Core\Url;
 use Noblogs\Support\Str;
 
 /**
@@ -207,6 +209,130 @@ final class Blog extends Model
         $blog->refreshDodginess();
 
         return $blog;
+    }
+
+    /**
+     * Avvisa il contatto dell'istanza che un blog nuovo è in coda di revisione.
+     *
+     * Si chiama dopo il commit: una SMTP lenta non deve tenere aperta la
+     * transazione, e un fallimento dell'invio non deve far saltare la creazione.
+     */
+    public function notifyPendingReview(User $owner): void
+    {
+        if ($this->reviewed) {
+            return;
+        }
+
+        $to = self::staffContactEmail();
+        if ($to === '') {
+            return;
+        }
+
+        $this->withSiteLocale(function () use ($to, $owner): void {
+            $site = (string) Config::get('site.name', 'Noblogs');
+            Mailer::send(
+                $to,
+                __('admin.review.email_subject', [
+                    'title' => $this->title,
+                    'site'  => $site,
+                ]),
+                __('admin.review.email_body', [
+                    'site'      => $site,
+                    'title'     => $this->title,
+                    'email'     => $owner->email,
+                    'path'      => Url::pathRoot($this),
+                    'subdomain' => Url::subdomainRoot($this),
+                    'blog_url'  => Url::blogRoot($this),
+                    'admin_url' => Url::platform('/admin/blog') . '?stato=attesa&q=' . rawurlencode($this->subdomain),
+                ]),
+                $owner->email
+            );
+        });
+    }
+
+    /**
+     * Conferma l'approvazione: al contatto dell'istanza il terzo livello appena
+     * attivato, all'autore che il blog è raggiungibile anche da lì.
+     */
+    public function notifyApproved(?User $owner = null): void
+    {
+        $owner ??= $this->owner();
+        $staff = self::staffContactEmail();
+        $ownerEmail = $owner !== null && filter_var($owner->email, FILTER_VALIDATE_EMAIL) !== false
+            ? $owner->email
+            : '';
+
+        $site = (string) Config::get('site.name', 'Noblogs');
+        $path = Url::pathRoot($this);
+        $subdomain = Url::subdomainRoot($this);
+
+        if ($staff !== '' && strcasecmp($staff, $ownerEmail) !== 0) {
+            $this->withSiteLocale(function () use ($staff, $owner, $ownerEmail, $site, $path, $subdomain): void {
+                Mailer::send(
+                    $staff,
+                    __('admin.review.approved_email_subject', [
+                        'title'     => $this->title,
+                        'subdomain' => $subdomain,
+                    ]),
+                    __('admin.review.approved_email_body', [
+                        'site'      => $site,
+                        'title'     => $this->title,
+                        'email'     => $ownerEmail,
+                        'path'      => $path,
+                        'subdomain' => $subdomain,
+                    ]),
+                    $owner?->email
+                );
+            });
+        }
+
+        if ($ownerEmail === '') {
+            return;
+        }
+
+        $locale = I18n::isAvailable($owner->locale) ? $owner->locale : (string) Config::get('site.locale', 'it');
+        $previous = I18n::locale();
+        I18n::load($locale);
+        try {
+            Mailer::send(
+                $ownerEmail,
+                __('blog.approved.email_subject', [
+                    'title'     => $this->title,
+                    'site'      => $site,
+                    'subdomain' => $subdomain,
+                ]),
+                __('blog.approved.email_body', [
+                    'site'       => $site,
+                    'title'      => $this->title,
+                    'path'       => $path,
+                    'subdomain'  => $subdomain,
+                    'dashboard'  => Url::platform('/dashboard/' . $this->subdomain),
+                ])
+            );
+        } finally {
+            I18n::load($previous);
+        }
+    }
+
+    private static function staffContactEmail(): string
+    {
+        $to = trim((string) (Setting::get('site.contact_email') ?: Config::get('site.contact_email', '')));
+        if ($to === '' || filter_var($to, FILTER_VALIDATE_EMAIL) === false) {
+            return '';
+        }
+        return $to;
+    }
+
+    /** @param callable():void $send */
+    private function withSiteLocale(callable $send): void
+    {
+        $previous = I18n::locale();
+        I18n::load((string) Config::get('site.locale', 'it'));
+        try {
+            $send();
+        } finally {
+            I18n::load($previous);
+        }
     }
 
     /** @param array<string,mixed> $data */
