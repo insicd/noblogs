@@ -1,5 +1,5 @@
 /**
- * Apprezzamenti. Incluso nella pagina del post (layouts/site.php).
+ * Apprezzamenti. Il codice attivo è quello incluso in layouts/site.php.
  */
 (() => {
   'use strict';
@@ -22,6 +22,7 @@
   const countEl = widget.querySelector('.upvote-count');
   let token = button.getAttribute('data-token') || '';
   let busy = false;
+  let settled = false;
 
   const asCount = (value) => {
     const n = parseInt(String(value), 10);
@@ -66,7 +67,11 @@
 
   if (infoUrl) {
     const info = infoUrl + (infoUrl.indexOf('?') === -1 ? '?' : '&') + '_=' + Date.now();
-    request(info).then(apply).catch(() => {});
+    request(info).then((data) => {
+      if (!settled) {
+        apply(data);
+      }
+    }).catch(() => {});
   }
 
   button.addEventListener('click', () => {
@@ -74,6 +79,7 @@
       return;
     }
     busy = true;
+    settled = true;
     button.disabled = true;
 
     const wasVoted = button.getAttribute('aria-pressed') === 'true';
@@ -84,6 +90,7 @@
     const body = new URLSearchParams();
     body.set('uid', button.getAttribute('data-uid') || '');
     body.set('token', token);
+    body.set('voted', nextVoted ? '1' : '0');
     body.set('interacted', '1');
     body.set('website', '');
 

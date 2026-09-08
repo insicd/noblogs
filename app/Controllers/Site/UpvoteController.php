@@ -33,7 +33,7 @@ final class UpvoteController extends SiteController
 
             return Response::json([
                 'count'   => $post->effectiveUpvotes(),
-                'voted'   => Upvote::exists($post->id, $hashId),
+                'voted'   => Upvote::isValid($post->id, $hashId),
                 'token'   => Csrf::sign('upvote:' . $post->uid, 43200),
                 'enabled' => $this->blog->upvotes_active,
             ])->noCache()->noIndex()
@@ -70,35 +70,21 @@ final class UpvoteController extends SiteController
                 return Response::json(['error' => 'rate_limited'], 429)->noCache();
             }
 
-            if (Upvote::exists($post->id, $hashId)) {
-                // Un voto marcato per un falso positivo (header assenti su
-                // hosting condiviso) va confermato, non cancellato: altrimenti
-                // il conteggio resta a zero e il pulsante sembra rotto.
-                if (Upvote::isMarked($post->id, $hashId) && $signals === []) {
+            $wantVote = $this->request->boolean('voted');
+
+            if ($wantVote) {
+                if (Upvote::isMarked($post->id, $hashId)) {
                     Upvote::confirm($post, $hashId);
-
-                    return Response::json([
-                        'count'   => $post->effectiveUpvotes(),
-                        'voted'   => true,
-                        'enabled' => true,
-                        'token'   => Csrf::sign('upvote:' . $post->uid, 43200),
-                    ])->noCache();
+                } elseif (!Upvote::exists($post->id, $hashId)) {
+                    Upvote::cast($post, $hashId, $signals);
                 }
-
+            } elseif (Upvote::exists($post->id, $hashId)) {
                 Upvote::remove($post, $hashId);
-                return Response::json([
-                    'count'   => $post->effectiveUpvotes(),
-                    'voted'   => false,
-                    'enabled' => true,
-                    'token'   => Csrf::sign('upvote:' . $post->uid, 43200),
-                ])->noCache();
             }
-
-            Upvote::cast($post, $hashId, $signals);
 
             return Response::json([
                 'count'   => $post->effectiveUpvotes(),
-                'voted'   => true,
+                'voted'   => Upvote::isValid($post->id, $hashId),
                 'enabled' => true,
                 'token'   => Csrf::sign('upvote:' . $post->uid, 43200),
             ])->noCache();

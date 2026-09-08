@@ -31,6 +31,12 @@ final class Upvote extends Model
         ) !== null;
     }
 
+    /** Voto presente e conteggiato (non marcato come sospetto). */
+    public static function isValid(int $postId, string $hashId): bool
+    {
+        return self::exists($postId, $hashId) && !self::isMarked($postId, $hashId);
+    }
+
     /**
      * Registra un voto. Restituisce false se era già presente.
      *

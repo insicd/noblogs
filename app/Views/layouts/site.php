@@ -122,6 +122,7 @@ $js = static function (string $file): string {
   const countEl = widget.querySelector('.upvote-count');
   let token = button.getAttribute('data-token') || '';
   let busy = false;
+  let settled = false;
 
   const asCount = (value) => {
     const n = parseInt(String(value), 10);
@@ -166,7 +167,11 @@ $js = static function (string $file): string {
 
   if (infoUrl) {
     const info = infoUrl + (infoUrl.indexOf('?') === -1 ? '?' : '&') + '_=' + Date.now();
-    request(info).then(apply).catch(() => {});
+    request(info).then((data) => {
+      if (!settled) {
+        apply(data);
+      }
+    }).catch(() => {});
   }
 
   button.addEventListener('click', () => {
@@ -174,6 +179,7 @@ $js = static function (string $file): string {
       return;
     }
     busy = true;
+    settled = true;
     button.disabled = true;
 
     const wasVoted = button.getAttribute('aria-pressed') === 'true';
@@ -184,6 +190,7 @@ $js = static function (string $file): string {
     const body = new URLSearchParams();
     body.set('uid', button.getAttribute('data-uid') || '');
     body.set('token', token);
+    body.set('voted', nextVoted ? '1' : '0');
     body.set('interacted', '1');
     body.set('website', '');
 
