@@ -102,7 +102,9 @@ final class Response
 
     public function noCache(): self
     {
-        return $this->withHeader('Cache-Control', 'private, no-store, max-age=0');
+        return $this
+            ->withHeader('Cache-Control', 'private, no-store, no-cache, max-age=0, must-revalidate')
+            ->withHeader('Pragma', 'no-cache');
     }
 
     public function noIndex(): self

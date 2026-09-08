@@ -231,7 +231,7 @@ return [
     'settings.analytics'      => 'Raccogli le statistiche',
     'settings.analytics_hint' => 'Conteggi aggregati e anonimi delle letture. Se le disattivi non raccogliamo nulla.',
     'settings.upvotes'        => 'Permetti gli apprezzamenti',
-    'settings.upvotes_hint'   => 'Un pulsante sotto ogni testo, senza registrazione né commenti.',
+    'settings.upvotes_hint'   => 'Un pulsante sotto ogni articolo, senza registrazione né commenti. Le pagine statiche non lo mostrano.',
     'settings.subscriptions'  => 'Permetti le iscrizioni',
     'settings.subscriptions_hint' => 'Mostra il modulo per lasciare l\'indirizzo email e ricevere gli aggiornamenti.',
     'settings.discoverable'   => 'Mostra nella vetrina',

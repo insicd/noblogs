@@ -230,7 +230,7 @@ return [
     'settings.analytics'          => 'Collect analytics',
     'settings.analytics_hint'     => 'Aggregated, anonymous read counts. Turn it off and we collect nothing.',
     'settings.upvotes'            => 'Allow appreciations',
-    'settings.upvotes_hint'       => 'One button under each text, with no sign-up and no comments.',
+    'settings.upvotes_hint'       => 'One button under each article, with no sign-up and no comments. Static pages do not show it.',
     'settings.subscriptions'      => 'Allow subscriptions',
     'settings.subscriptions_hint' => 'Shows the form to leave an email address and get updates.',
     'settings.discoverable'       => 'Show in the showcase',

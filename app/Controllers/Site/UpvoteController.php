@@ -36,13 +36,14 @@ final class UpvoteController extends SiteController
             // inutile riusare una richiesta catturata altrove.
             'token'   => Csrf::sign('upvote:' . $post->uid . ':' . $hashId, 43200),
             'enabled' => $this->blog->upvotes_active,
-        ])->noCache()->noIndex();
+        ])->noCache()->noIndex()
+            ->withHeader('CDN-Cache-Control', 'no-store');
     }
 
     public function toggle(): Response
     {
         if (!$this->blog->upvotes_active) {
-            return Response::json(['error' => 'disabled'], 403)->noCache();
+            return Response::json(['error' => 'disabled', 'enabled' => false], 403)->noCache();
         }
 
         $post = $this->resolvePost(trim($this->request->input('uid', '') ?? ''));
@@ -64,14 +65,22 @@ final class UpvoteController extends SiteController
 
         if (Upvote::exists($post->id, $hashId)) {
             Upvote::remove($post, $hashId);
-            return Response::json(['count' => $post->effectiveUpvotes(), 'voted' => false])->noCache();
+            return Response::json([
+                'count'   => $post->effectiveUpvotes(),
+                'voted'   => false,
+                'enabled' => true,
+            ])->noCache();
         }
 
         // I voti sospetti vengono registrati ma non conteggiati: chi li invia
         // vede il pulsante cambiare stato e non ha motivo di riprovare.
         Upvote::cast($post, $hashId, $this->suspicionSignals());
 
-        return Response::json(['count' => $post->effectiveUpvotes(), 'voted' => true])->noCache();
+        return Response::json([
+            'count'   => $post->effectiveUpvotes(),
+            'voted'   => true,
+            'enabled' => true,
+        ])->noCache();
     }
 
     /** @return list<string> */

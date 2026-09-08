@@ -75,7 +75,10 @@ final class PostController extends SiteController
                 : Url::post($this->blog, $post->slug),
             'lang'        => $lang,
             'showMeta'    => !$post->is_page,
-            'showUpvote'  => $this->blog->upvotes_active && !$post->is_page && $post->make_discoverable && !$isDraft,
+            // Il widget sta sempre nell'HTML degli articoli: l'opzione
+            // «Permetti gli apprezzamenti» la applica lo script in tempo
+            // reale, così una pagina in cache non ignora lo spegnimento.
+            'showUpvote'  => !$post->is_page && !$isDraft,
             'isDraft'     => $isDraft,
             'indexable'   => $this->blog->isIndexable() && !$isDraft && $post->make_discoverable,
             'trackPath'   => $isDraft ? null : $post->uid,

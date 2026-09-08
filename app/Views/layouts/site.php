@@ -89,13 +89,20 @@ $faviconIsGlyph = $blog->faviconIsGlyph();
   </p>
 </footer>
 
+<?php
+$js = static function (string $file): string {
+    $path = NOBLOGS_PUBLIC . '/assets/js/' . $file;
+    $url = Url::asset('js/' . $file);
+    return $url . '?v=' . (is_file($path) ? (string) filemtime($path) : NOBLOGS_VERSION);
+};
+?>
 <?php if ($blog->analytics_active && $trackPath !== null): ?>
-<script src="<?= e(Url::asset('js/hit.js')) ?>" data-endpoint="<?= e(Url::site('/hit')) ?>" data-uid="<?= e($trackPath) ?>" defer></script>
+<script src="<?= e($js('hit.js')) ?>" data-endpoint="<?= e(Url::site('/hit')) ?>" data-uid="<?= e($trackPath) ?>" defer></script>
 <?php endif; ?>
 <?php if (!empty($showUpvote)): ?>
-<script src="<?= e(Url::asset('js/upvote.js')) ?>" data-endpoint="<?= e(Url::site('/upvote')) ?>" data-info="<?= e(Url::site('/upvote-info/' . $post->uid)) ?>" defer></script>
+<script src="<?= e($js('upvote.js')) ?>" data-endpoint="<?= e(Url::site('/upvote')) ?>" data-info="<?= e(Url::site('/upvote-info/' . $post->uid)) ?>" defer></script>
 <?php endif; ?>
-<script src="<?= e(Url::asset('js/dates.js')) ?>" defer></script>
+<script src="<?= e($js('dates.js')) ?>" defer></script>
 <?= $blog->footer_directive ?? '' ?>
 </body>
 </html>

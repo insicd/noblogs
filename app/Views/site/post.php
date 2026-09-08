@@ -50,7 +50,7 @@ $this->start('content');
     <button class="upvote-button" type="button" data-uid="<?= e($post->uid) ?>"
             aria-label="<?= e(__('post.upvote_label')) ?>">
       <span class="upvote-icon" aria-hidden="true">▲</span>
-      <span class="upvote-count">—</span>
+      <span class="upvote-count"><?= e((string) $post->effectiveUpvotes()) ?></span>
     </button>
   </div>
 <?php endif; ?>

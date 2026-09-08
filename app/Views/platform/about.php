@@ -71,7 +71,7 @@ $this->start('content');
     Versione in esecuzione: <code><?= e($version) ?></code>.
   </p>
   <p>
-    <a class="pf-button" href="<?= e((string) Config::get('site.source_url', 'https://https://github.com/insicd/noblogs')) ?>" rel="noopener" target="_blank">Codice sorgente</a>
+    <a class="pf-button" href="<?= e((string) Config::get('site.source_url', 'https://github.com/insicd/noblogs')) ?>" rel="noopener" target="_blank">Codice sorgente</a>
   </p>
 
   <h2>Contatti</h2>
