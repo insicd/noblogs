@@ -3,6 +3,7 @@
  * Pagina di ingresso: cos'è Noblogs, come si comincia, cosa c'è da leggere.
  *
  * @var \Noblogs\Core\View $this
+ * @var bool $loggedIn
  * @var array{blogs:int,posts:int} $stats
  * @var list<array{post:\Noblogs\Models\Post,blog:\Noblogs\Models\Blog}> $entries
  * @var string $domain
@@ -13,6 +14,7 @@
 use Noblogs\Core\Config;
 use Noblogs\Core\Url;
 
+$loggedIn = (bool) ($loggedIn ?? false);
 $siteName = (string) ($siteName ?? Config::get('site.name', 'Noblogs'));
 $number = static fn(int $value): string => number_format($value, 0, ',', '.');
 
@@ -41,23 +43,30 @@ $this->start('content');
   </div>
 
   <div class="pf-hero-form">
-    <h2><?= e(__('platform.home.form_heading')) ?></h2>
+    <?php if ($loggedIn): ?>
+      <h2><?= e(__('platform.home.dashboard_heading')) ?></h2>
+      <p>
+        <a class="pf-button pf-button-big" href="<?= e(Url::to('/dashboard')) ?>"><?= e(__('platform.home.dashboard_link')) ?></a>
+      </p>
+    <?php else: ?>
+      <h2><?= e(__('platform.home.form_heading')) ?></h2>
 
-    <?php /* Modulo rapido: porta a /registrati con l'indirizzo già scritto.
-             È una GET perché non cambia nulla; email e password si inseriscono
-             nella pagina successiva, non in una query string. */ ?>
-    <form method="get" action="<?= e(Url::to('/registrati')) ?>">
-      <label for="nb-quick-subdomain"><?= e(__('auth.register.subdomain')) ?></label>
-      <div class="pf-field-inline">
-        <input type="text" id="nb-quick-subdomain" name="subdomain"
-               value="<?= e((string) ($old['subdomain'] ?? '')) ?>"
-               placeholder="ilmioblog" inputmode="url" autocapitalize="none"
-               spellcheck="false" maxlength="63" pattern="[a-z0-9-]+">
-        <span class="pf-field-suffix">.<?= e($domain) ?></span>
-      </div>
-      <button type="submit" class="pf-button pf-button-big"><?= e(__('platform.home.form_submit')) ?></button>
-      <p class="pf-form-note"><?= e(__('platform.home.form_note')) ?></p>
-    </form>
+      <?php /* Modulo rapido: porta a /registrati con l'indirizzo già scritto.
+               È una GET perché non cambia nulla; email e password si inseriscono
+               nella pagina successiva, non in una query string. */ ?>
+      <form method="get" action="<?= e(Url::to('/registrati')) ?>">
+        <label for="nb-quick-subdomain"><?= e(__('auth.register.subdomain')) ?></label>
+        <div class="pf-field-inline">
+          <input type="text" id="nb-quick-subdomain" name="subdomain"
+                 value="<?= e((string) ($old['subdomain'] ?? '')) ?>"
+                 placeholder="ilmioblog" inputmode="url" autocapitalize="none"
+                 spellcheck="false" maxlength="63" pattern="[a-z0-9-]+">
+          <span class="pf-field-suffix">.<?= e($domain) ?></span>
+        </div>
+        <button type="submit" class="pf-button pf-button-big"><?= e(__('platform.home.form_submit')) ?></button>
+        <p class="pf-form-note"><?= e(__('platform.home.form_note')) ?></p>
+      </form>
+    <?php endif; ?>
   </div>
 </section>
 

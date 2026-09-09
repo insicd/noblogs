@@ -549,9 +549,11 @@ input:focus-visible {
   justify-self: start;
 }
 
-.pf-hero-form button[type="submit"] {
+.pf-hero-form button[type="submit"],
+.pf-hero-form .pf-button-big {
   margin-top: 1rem;
   width: 100%;
+  text-align: center;
 }
 
 .pf-form-links {

@@ -16,10 +16,11 @@ use Noblogs\Markdown\Cache;
 /**
  * Pagina di ingresso della piattaforma.
  *
- * Ha un solo scopo: spiegare in poche righe cos'è Noblogs e mettere il modulo
- * di registrazione a portata di mano. I numeri mostrati sono quelli veri,
- * calcolati con due conteggi e tenuti in cache un'ora: aggiornarli a ogni
- * visita costerebbe due scansioni di tabella per niente.
+ * Spiega in poche righe cos'è Noblogs e mette a portata di mano il modulo
+ * di registrazione, oppure il collegamento al pannello se chi visita è già
+ * autenticato. I numeri mostrati sono quelli veri, calcolati con due
+ * conteggi e tenuti in cache un'ora: aggiornarli a ogni visita costerebbe
+ * due scansioni di tabella per niente.
  */
 final class HomeController extends Controller
 {
@@ -32,10 +33,6 @@ final class HomeController extends Controller
 
     public function index(): Response
     {
-        if (Auth::check()) {
-            return $this->redirect(Url::to('/dashboard'));
-        }
-
         $response = $this->view('platform/home', [
             'pageTitle'   => (string) Config::get('site.name', 'Noblogs')
                 . ' — ' . __('platform.home.title'),
@@ -43,6 +40,7 @@ final class HomeController extends Controller
             'bodyClass'   => 'landing',
             'canonical'   => Url::platform('/'),
             'indexable'   => true,
+            'loggedIn'    => Auth::check(),
             'stats'       => $this->stats(),
             'entries'     => DiscoverController::showcase([
                 'order' => 'recenti',

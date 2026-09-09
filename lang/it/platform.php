@@ -39,6 +39,8 @@ return [
     'platform.home.form_heading'   => 'Apri il tuo blog',
     'platform.home.form_note'      => 'Ti servono un indirizzo email e trenta secondi.',
     'platform.home.form_submit'    => 'Comincia',
+    'platform.home.dashboard_heading' => 'Sei già dentro',
+    'platform.home.dashboard_link'    => 'Vai alla tua dashboard',
     'platform.home.stats_blogs'    => 'blog attivi',
     'platform.home.stats_posts'    => 'articoli pubblicati',
     'platform.home.recent_heading' => 'Dalla vetrina',

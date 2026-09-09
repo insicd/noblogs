@@ -38,6 +38,8 @@ return [
     'platform.home.form_heading'   => 'Start your blog',
     'platform.home.form_note'      => 'All you need is an email address and thirty seconds.',
     'platform.home.form_submit'    => 'Get started',
+    'platform.home.dashboard_heading' => 'You are already in',
+    'platform.home.dashboard_link'    => 'Go to your dashboard',
     'platform.home.stats_blogs'    => 'active blogs',
     'platform.home.stats_posts'    => 'published posts',
     'platform.home.recent_heading' => 'From the showcase',
