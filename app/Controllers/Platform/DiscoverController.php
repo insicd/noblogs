@@ -413,7 +413,7 @@ final class DiscoverController extends Controller
 
         return $response
             ->withHeader('Cache-Control', 'private, max-age=' . self::BROWSER_CACHE)
-            ->withHeader('Vary', 'Cookie');
+            ->withHeader('Vary', 'Cookie, Accept-Language');
     }
 
     /** @param list<array{post:Post,blog:Blog}> $entries */

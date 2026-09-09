@@ -29,12 +29,13 @@ return [
     'platform.footer.help'        => 'Aiuto',
     'platform.footer.source'      => 'Codice sorgente',
     'platform.footer.no_tracking' => 'Nessun tracciamento, nessun cookie di profilazione, nessun servizio di terze parti.',
+    'platform.lang.label'         => 'Lingua',
 
     // -----------------------------------------------------------------------
     // Pagina di ingresso
     // -----------------------------------------------------------------------
     'platform.home.title'          => 'Blog leggeri, senza tracciamento',
-    'platform.home.heading'        => 'Scrivi. Basta.',
+    'platform.home.heading'        => 'Scrivi. Semplicemente.',
     'platform.home.lead'           => 'Noblogs è un servizio gratuito di blog: nessuna pubblicità, nessun tracciamento, nessun piano a pagamento. Scrivi in Markdown, la pagina che ne esce pesa pochi kilobyte e si legge su qualunque dispositivo.',
     'platform.home.form_heading'   => 'Apri il tuo blog',
     'platform.home.form_note'      => 'Ti servono un indirizzo email e trenta secondi.',

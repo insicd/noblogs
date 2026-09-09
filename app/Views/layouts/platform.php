@@ -129,6 +129,19 @@ $navItems = [
       </ul>
     </nav>
     <p class="pf-footer-note"><?= e(__('platform.footer.no_tracking')) ?></p>
+    <?php if (isset($request) && $request instanceof \Noblogs\Core\Request): ?>
+      <?php $currentLang = I18n::locale(); ?>
+      <nav class="pf-lang" aria-label="<?= e(__('platform.lang.label')) ?>">
+        <?php foreach (I18n::uiLocales() as $i => $code): ?>
+          <?php if ($i > 0): ?><span aria-hidden="true">/</span><?php endif; ?>
+          <?php if ($code === $currentLang): ?>
+            <span lang="<?= e($code) ?>" aria-current="true"><?= e($code) ?></span>
+          <?php else: ?>
+            <a href="<?= e(I18n::switchHref($request, $code)) ?>" lang="<?= e($code) ?>" hreflang="<?= e($code) ?>"><?= e($code) ?></a>
+          <?php endif; ?>
+        <?php endforeach; ?>
+      </nav>
+    <?php endif; ?>
   </div>
 </footer>
 

@@ -474,7 +474,7 @@ final class PageController extends Controller
 
         return $response
             ->withHeader('Cache-Control', 'private, max-age=' . self::BROWSER_CACHE)
-            ->withHeader('Vary', 'Cookie');
+            ->withHeader('Vary', 'Cookie, Accept-Language');
     }
 
     private static function megabytes(int $bytes): string

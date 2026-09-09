@@ -10,6 +10,7 @@ require_once dirname(__DIR__) . '/app/bootstrap.php';
 use Noblogs\Core\Config;
 use Noblogs\Core\Database;
 use Noblogs\Core\ErrorHandler;
+use Noblogs\Core\I18n;
 use Noblogs\Core\Request;
 use Noblogs\Core\Response;
 use Noblogs\Core\Session;
@@ -55,9 +56,15 @@ if ($redirect = $tenant->canonicalRedirect($request)) {
 // così i lettori non ricevono nessun cookie.
 if ($tenant->isPlatform()) {
     Session::start();
+    if ($switch = I18n::consumeSwitch($request)) {
+        $switch->send();
+        exit;
+    }
+    I18n::load(I18n::fromRequest($request));
 }
 
 View::share('tenant', $tenant);
+View::share('request', $request);
 View::share('siteName', Config::get('site.name', 'Noblogs'));
 
 $router = require NOBLOGS_APP . '/routes.php';

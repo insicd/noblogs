@@ -6,6 +6,7 @@ namespace Noblogs\Models;
 
 use Noblogs\Core\Auth;
 use Noblogs\Core\Config;
+use Noblogs\Core\I18n;
 use Noblogs\Support\Dates;
 use Noblogs\Support\Str;
 
@@ -78,7 +79,9 @@ final class User extends Model
         $user->email = mb_strtolower(trim($email));
         $user->password_hash = Auth::hash($password);
         $user->role = $role;
-        $user->locale = (string) Config::get('site.locale', 'it');
+        $user->locale = I18n::isUiLocale(I18n::locale())
+            ? I18n::locale()
+            : (string) Config::get('site.locale', 'it');
         $user->timezone = (string) Config::get('site.timezone', 'Europe/Rome');
         $user->max_blogs = (int) Config::get('limits.blogs_per_user', 3);
         $user->created_at = self::now();

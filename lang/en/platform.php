@@ -28,6 +28,7 @@ return [
     'platform.footer.help'        => 'Help',
     'platform.footer.source'      => 'Source code',
     'platform.footer.no_tracking' => 'No tracking, no profiling cookies, no third-party services.',
+    'platform.lang.label'         => 'Language',
 
     // -----------------------------------------------------------------------
     // Landing page

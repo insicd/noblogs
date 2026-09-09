@@ -57,7 +57,7 @@ final class HomeController extends Controller
         // condivisa finirebbe per essere servito a tutti.
         return $response
             ->withHeader('Cache-Control', 'private, max-age=' . self::BROWSER_CACHE)
-            ->withHeader('Vary', 'Cookie');
+            ->withHeader('Vary', 'Cookie, Accept-Language');
     }
 
     /**
