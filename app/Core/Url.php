@@ -43,15 +43,16 @@ final class Url
 
     /**
      * Indirizzo pubblico di un blog: dominio proprio se c'è, altrimenti il
-     * percorso sul dominio principale finché il terzo livello non esiste
-     * ancora, e il sottodominio dopo l'approvazione.
+     * percorso o il terzo livello secondo la scelta dell'amministrazione.
+     * Prima dell'approvazione si pubblica solo il percorso, anche se il
+     * terzo livello è già stato abilitato.
      */
     public static function blogRoot(Blog $blog): string
     {
         if (self::customDomain($blog) !== null) {
             return self::scheme() . '://' . self::customDomain($blog);
         }
-        if (Config::get('routing.mode') === 'path' || self::pathUntilReview($blog)) {
+        if (self::prefersPath($blog)) {
             return self::pathRoot($blog);
         }
         return self::subdomainRoot($blog);
@@ -73,14 +74,35 @@ final class Url
     }
 
     /**
-     * Il terzo livello non è ancora stato creato: l'unico indirizzo che
-     * risponde è il percorso sul dominio principale.
+     * Il blog non è ancora approvato: l'unico indirizzo da mostrare è il
+     * percorso sul dominio principale.
      */
     public static function pathUntilReview(Blog $blog): bool
     {
-        return !$blog->reviewed
-            && Config::get('routing.mode') !== 'path'
-            && Config::get('routing.path_fallback', true);
+        return !$blog->reviewed && self::pathFallbackActive();
+    }
+
+    /**
+     * L'indirizzo pubblico è il percorso, non il terzo livello.
+     *
+     * Vale se l'installazione è solo su path, se il blog non è ancora
+     * approvato, o se l'amministrazione ha scelto il percorso.
+     */
+    public static function prefersPath(Blog $blog): bool
+    {
+        if (Config::get('routing.mode') === 'path') {
+            return true;
+        }
+        if (!$blog->reviewed) {
+            return true;
+        }
+        return !$blog->use_subdomain;
+    }
+
+    /** Il terzo livello è l'indirizzo pubblico (nessun dominio proprio). */
+    public static function usesSubdomain(Blog $blog): bool
+    {
+        return self::customDomain($blog) === null && !self::prefersPath($blog);
     }
 
     /** Sottodominio e percorso convivono su questa installazione. */

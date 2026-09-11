@@ -111,6 +111,10 @@ return [
     'admin.blogs.state.hidden'   => 'Hidden',
     'admin.blogs.state.flagged'  => 'Flagged',
     'admin.blogs.state.raw_html' => 'Raw HTML',
+    'admin.blogs.state.path'      => 'Path',
+    'admin.blogs.state.subdomain' => 'Third-level',
+
+    'admin.blogs.routing_hint' => 'Turn on the third-level host only after creating the subdomain. Every public link (including the showcase and Explore) follows this choice. Until approval the blog stays on the path.',
 
     'admin.blogs.action.approva'              => 'Approve',
     'admin.blogs.action.nascondi'             => 'Hide',
@@ -119,6 +123,8 @@ return [
     'admin.blogs.action.rimuovi_segnalazione' => 'Remove flag',
     'admin.blogs.action.consenti_html'        => 'Allow HTML',
     'admin.blogs.action.revoca_html'          => 'Revoke HTML',
+    'admin.blogs.action.terzo_livello'        => 'Third-level',
+    'admin.blogs.action.solo_percorso'        => 'Path only',
     'admin.blogs.action.elimina'              => 'Delete',
 
     'admin.blogs.done.approva'              => 'Blog :blog approved.',
@@ -128,14 +134,16 @@ return [
     'admin.blogs.done.rimuovi_segnalazione' => 'Flag removed from blog :blog.',
     'admin.blogs.done.consenti_html'        => 'Blog :blog can now use raw HTML in its content.',
     'admin.blogs.done.revoca_html'          => 'Raw HTML revoked for blog :blog.',
+    'admin.blogs.done.terzo_livello'        => 'Blog :blog: public links now use the third-level host.',
+    'admin.blogs.done.solo_percorso'        => 'Blog :blog: public links stay on the path.',
     'admin.blogs.done.generic'              => 'Blog :blog updated.',
 
     'admin.blogs.error.not_found' => 'This blog no longer exists.',
 
     'admin.review.email_subject' => 'New blog awaiting approval: :title',
-    'admin.review.email_body'    => "A new blog was created on :site and is awaiting approval.\n\nTitle: :title\nAccount: :email\nReachable now: :path\nAfter approval: :subdomain\n\nOpen the blog:\n:blog_url\n\nReview queue:\n:admin_url\n",
+    'admin.review.email_body'    => "A new blog was created on :site and is awaiting approval.\n\nTitle: :title\nAccount: :email\nReachable now: :path\nThird-level (when you enable it): :subdomain\n\nOpen the blog:\n:blog_url\n\nReview queue:\n:admin_url\n",
     'admin.review.approved_email_subject' => 'Blog approved: :title',
-    'admin.review.approved_email_body'    => "You approved the blog “:title” on :site. The third-level host is now active.\n\nThird-level: :subdomain\nPath (still valid): :path\nAccount: :email\n",
+    'admin.review.approved_email_body'    => "You approved the blog “:title” on :site.\n\nPublic address: :blog_url\nPath: :path\nThird-level: :subdomain\nAccount: :email\n",
 
     'admin.blogs.delete.title'            => 'Delete :blog',
     'admin.blogs.delete.heading'          => 'You are about to delete «:blog»',
@@ -248,14 +256,14 @@ return [
     'admin.settings.tagline'            => 'Tagline',
     'admin.settings.tagline_hint'       => 'One line under the name, on the landing page and in the metadata.',
     'admin.settings.contact_email'      => 'Contact email',
-    'admin.settings.contact_email_hint' => 'Shown on public pages to whoever needs to report abuse, and used to notify you when a new blog is awaiting approval and when you approve it (confirmation of the third-level host). Leave empty not to publish it: the address in config/config.php is used instead.',
+    'admin.settings.contact_email_hint' => 'Shown on public pages to whoever needs to report abuse, and used to notify you when a new blog is awaiting approval and when you approve it. Leave empty not to publish it: the address in config/config.php is used instead.',
 
     'admin.settings.registration_open'      => 'Registrations open',
     'admin.settings.registration_open_hint' => 'Unchecked, the sign-up form stays reachable but refuses new accounts. Existing accounts are untouched.',
     'admin.settings.verify_email'           => 'Require email verification',
     'admin.settings.verify_email_hint'      => 'Without verification no blog can be created. It is the first barrier against automated sign-ups.',
     'admin.settings.review_blogs'           => 'Require review of new blogs',
-    'admin.settings.review_blogs_hint'      => 'New blogs stay out of search engines and out of the showcase until a moderator approves them. They remain readable to anyone with the address (via the path on the main domain, until the third-level host is created).',
+    'admin.settings.review_blogs_hint'      => 'New blogs stay out of search engines and out of the showcase until a moderator approves them. They remain readable to anyone with the address, usually via the path on the main domain. The third-level host is switched on per blog, after the subdomain has been created.',
 
     'admin.settings.blogs_per_user'      => 'Blogs per user',
     'admin.settings.blogs_per_user_hint' => 'Applies to new accounts; a single user\'s limit is changed from the Users page.',

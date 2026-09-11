@@ -48,7 +48,7 @@ return [
     'auth.register.created'        => 'Blog created. Check your inbox to confirm your email address.',
     'auth.register.created_ready'  => 'Blog created. You can sign in now.',
     'auth.register.review_notice'  => 'Brand new blogs are not indexed by search engines until a moderator approves them. The blog is online and readable straight away.',
-    'auth.register.review_path_notice' => 'Until the blog is approved it is reachable only at :domain/chosen-name: the subdomain is switched on after approval.',
+    'auth.register.review_path_notice' => 'Until the blog is approved it is reachable only at :domain/chosen-name. The third-level host is switched on if and when the administrators enable it.',
     'auth.register.exists_subject' => 'Someone tried to sign up with your address',
     'auth.register.exists_body'    => "Hello,\n\nsomeone tried to open a new account on :site using this email address, which already has one.\n\nIf that was you, just sign in:\n:login\n\nIf you forgot your password, you can reset it here:\n:reset\n\nIf it was not you, there is nothing to do: no account was created and nothing was disclosed to whoever filled in the form.\n",
 

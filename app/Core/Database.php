@@ -200,4 +200,16 @@ final class Database
 
         return $stmt->fetchColumn() !== false;
     }
+
+    public function columnExists(string $table, string $column): bool
+    {
+        $stmt = $this->pdo->prepare(
+            'SELECT 1 FROM information_schema.columns
+             WHERE table_schema = DATABASE() AND table_name = ? AND column_name = ?
+             LIMIT 1'
+        );
+        $stmt->execute([$this->table($table), $column]);
+
+        return $stmt->fetchColumn() !== false;
+    }
 }

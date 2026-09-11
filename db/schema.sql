@@ -65,6 +65,9 @@ CREATE TABLE IF NOT EXISTS `{{prefix}}blogs` (
   `subscriptions_active` TINYINT(1) NOT NULL DEFAULT 0,
   `discoverable`      TINYINT(1) NOT NULL DEFAULT 1,
   `reviewed`          TINYINT(1) NOT NULL DEFAULT 0,
+  -- 1 = indirizzo pubblico sul terzo livello (nome.dominio). 0 = solo
+  -- percorso (dominio/nome). Lo decide l'amministrazione, non l'approvazione.
+  `use_subdomain`     TINYINT(1) NOT NULL DEFAULT 0,
   `hidden`            TINYINT(1) NOT NULL DEFAULT 0,
   `flagged`           TINYINT(1) NOT NULL DEFAULT 0,
   `to_review`         TINYINT(1) NOT NULL DEFAULT 0,

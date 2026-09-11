@@ -73,7 +73,10 @@ $this->end();
       <article class="admin-queue__item<?= $blog->dodginess_score >= 1.0 ? ' admin-queue__item--risky' : '' ?>">
         <div class="admin-queue__head">
           <h3><?= e($blog->title) ?></h3>
-          <a class="admin-mono" href="<?= e(Url::blogRoot($blog)) ?>" target="_blank" rel="noopener noreferrer"><?= e($blog->subdomain) ?></a>
+          <a class="admin-mono" href="<?= e(Url::blogRoot($blog)) ?>" target="_blank" rel="noopener noreferrer"><?= e((string) preg_replace('#^https?://#', '', Url::blogRoot($blog))) ?></a>
+          <span class="admin-tag"><?= e($blog->use_subdomain
+              ? __('admin.blogs.state.subdomain')
+              : __('admin.blogs.state.path')) ?></span>
           <?php if ($blog->flagged): ?><span class="admin-tag admin-tag--danger"><?= e(__('admin.blogs.state.flagged')) ?></span><?php endif; ?>
           <?php if ($blog->hidden): ?><span class="admin-tag"><?= e(__('admin.blogs.state.hidden')) ?></span><?php endif; ?>
         </div>
@@ -101,10 +104,17 @@ $this->end();
           </ul>
         <?php endif; ?>
 
-        <?php $this->partial('admin/_blog-actions', [
+        <?php
+        $queueActions = ['approva'];
+        if (Url::pathFallbackActive()) {
+            $queueActions[] = $blog->use_subdomain ? 'solo-percorso' : 'terzo-livello';
+        }
+        $queueActions = array_merge($queueActions, ['nascondi', 'segnala', 'elimina']);
+        $this->partial('admin/_blog-actions', [
             'blog'    => $blog,
-            'actions' => ['approva', 'nascondi', 'segnala', 'elimina'],
-        ]); ?>
+            'actions' => $queueActions,
+        ]);
+        ?>
       </article>
     <?php endforeach; ?>
   </div>

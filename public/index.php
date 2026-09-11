@@ -17,6 +17,7 @@ use Noblogs\Core\Session;
 use Noblogs\Core\Tenant;
 use Noblogs\Core\Url;
 use Noblogs\Core\View;
+use Noblogs\Models\Blog;
 
 View::setBasePath(NOBLOGS_APP . '/Views');
 
@@ -36,6 +37,7 @@ if (!Config::isInstalled()) {
 
 try {
     Database::instance();
+    Blog::ensureRoutingColumn();
 } catch (\Throwable $e) {
     ErrorHandler::log($e);
     Response::html(View::make('errors/database', ['debug' => Config::get('debug', false), 'error' => $e]), 503)

@@ -73,6 +73,9 @@ $this->end();
 <p class="admin-hint"><?= e($total === 1
     ? __('admin.blogs.count_one')
     : __('admin.blogs.count', ['count' => number_format($total, 0, ',', '.')])) ?></p>
+<?php if (Url::pathFallbackActive()): ?>
+  <p class="admin-hint"><?= e(__('admin.blogs.routing_hint')) ?></p>
+<?php endif; ?>
 
 <?php if ($blogs === []): ?>
   <p class="admin-empty"><?= e(__('admin.blogs.empty')) ?></p>
@@ -103,12 +106,17 @@ $this->end();
         $actions[] = $blog->hidden ? 'mostra' : 'nascondi';
         $actions[] = $blog->flagged ? 'rimuovi-segnalazione' : 'segnala';
         $actions[] = $blog->allow_raw_html ? 'revoca-html' : 'consenti-html';
+        if (Url::pathFallbackActive()) {
+            $actions[] = $blog->use_subdomain ? 'solo-percorso' : 'terzo-livello';
+        }
         $actions[] = 'elimina';
+        $public = Url::blogRoot($blog);
+        $publicLabel = (string) preg_replace('#^https?://#', '', $public);
         ?>
         <tr>
           <td>
             <strong><?= e($blog->title) ?></strong><br>
-            <a class="admin-mono" href="<?= e(Url::blogRoot($blog)) ?>" target="_blank" rel="noopener noreferrer"><?= e($blog->subdomain) ?></a>
+            <a class="admin-mono" href="<?= e($public) ?>" target="_blank" rel="noopener noreferrer"><?= e($publicLabel) ?></a>
             <?php if ($blog->domain !== null && $blog->domain !== ''): ?>
               <br><span class="admin-mono admin-tag"><?= e($blog->domain) ?></span>
             <?php endif; ?>
@@ -128,6 +136,11 @@ $this->end();
             <?php if ($blog->hidden): ?><span class="admin-tag"><?= e(__('admin.blogs.state.hidden')) ?></span><?php endif; ?>
             <?php if ($blog->flagged): ?><span class="admin-tag admin-tag--danger"><?= e(__('admin.blogs.state.flagged')) ?></span><?php endif; ?>
             <?php if ($blog->allow_raw_html): ?><span class="admin-tag admin-tag--danger"><?= e(__('admin.blogs.state.raw_html')) ?></span><?php endif; ?>
+            <?php if ($blog->domain === null || $blog->domain === ''): ?>
+              <span class="admin-tag"><?= e($blog->use_subdomain
+                  ? __('admin.blogs.state.subdomain')
+                  : __('admin.blogs.state.path')) ?></span>
+            <?php endif; ?>
             <?php if ($blog->reviewer_note !== null && trim($blog->reviewer_note) !== ''): ?>
               <br><span class="admin-hint"><?= e($blog->reviewer_note) ?></span>
             <?php endif; ?>

@@ -28,6 +28,7 @@ use Noblogs\Controllers\Admin\DashboardController;
 use Noblogs\Core\Config;
 use Noblogs\Core\Database;
 use Noblogs\Markdown\Cache;
+use Noblogs\Models\Blog;
 use Noblogs\Models\Media;
 use Noblogs\Models\ModerationLog;
 use Noblogs\Models\Post;
@@ -296,6 +297,7 @@ function nb_cli_require_install(): void
     // cambiata: meglio dirlo che stampare un'eccezione di PDO.
     try {
         Database::instance();
+        Blog::ensureRoutingColumn();
     } catch (\Throwable $e) {
         throw new \RuntimeException('Connessione al database non riuscita: ' . $e->getMessage());
     }

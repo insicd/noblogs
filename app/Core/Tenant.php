@@ -112,16 +112,24 @@ final class Tenant
     }
 
     /**
-     * 301 verso l'host canonico del blog, se la richiesta è arrivata da un
-     * altro nome. Succede quando il blog ha un dominio proprio e qualcuno
-     * visita ancora il sottodominio (o il percorso di fallback).
+     * 301 verso l'indirizzo pubblico del blog.
      *
-     * Il fallback su path, da solo, non reindirizza: è fatto apposta per
-     * restare raggiungibile prima che il DNS dei sottodomini sia a posto.
+     * Vale per il dominio proprio e per la scelta percorso / terzo livello:
+     * i link di vetrina, feed e canonical restano allineati a quella scelta.
+     * Prima dell'approvazione (o se il terzo livello non è abilitato) una
+     * visita al sottodominio torna sul percorso.
      */
     public function canonicalRedirect(Request $request): ?Response
     {
-        if (!$this->needsCanonicalRedirect || $this->blog === null || !$request->isGet()) {
+        if ($this->blog === null || !$request->isGet()) {
+            return null;
+        }
+
+        $wantsRedirect = $this->needsCanonicalRedirect
+            || ($this->via === self::VIA_PATH && Url::usesSubdomain($this->blog))
+            || ($this->via === self::VIA_SUBDOMAIN && !Url::usesSubdomain($this->blog) && Url::pathFallbackActive());
+
+        if (!$wantsRedirect) {
             return null;
         }
 
@@ -150,8 +158,8 @@ final class Tenant
     }
 
     /**
-     * Host verso cui conviene reindirizzare. Vale solo se il blog ha un
-     * dominio proprio: altrimenti sottodominio e percorso convivono.
+     * Host verso cui conviene reindirizzare. Vale se il blog ha un dominio
+     * proprio. Percorso e terzo livello si allineano in canonicalRedirect.
      */
     private static function canonicalHost(Blog $blog): ?string
     {

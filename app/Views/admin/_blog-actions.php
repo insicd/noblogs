@@ -28,6 +28,8 @@ use Noblogs\Core\Url;
           'rimuovi-segnalazione' => __('admin.blogs.action.rimuovi_segnalazione'),
           'consenti-html'        => __('admin.blogs.action.consenti_html'),
           'revoca-html'          => __('admin.blogs.action.revoca_html'),
+          'terzo-livello'        => __('admin.blogs.action.terzo_livello'),
+          'solo-percorso'        => __('admin.blogs.action.solo_percorso'),
           'elimina'              => __('admin.blogs.action.elimina'),
           default                => $action,
       }) ?>

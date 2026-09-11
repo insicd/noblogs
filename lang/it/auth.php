@@ -48,7 +48,7 @@ return [
     'auth.register.created'        => 'Blog creato. Controlla la posta per confermare l\'indirizzo email.',
     'auth.register.created_ready'  => 'Blog creato. Ora puoi accedere.',
     'auth.register.review_notice'  => 'I blog appena creati non vengono indicizzati dai motori di ricerca finché un moderatore non li approva. Il blog è comunque online e leggibile da subito.',
-    'auth.register.review_path_notice' => 'Finché il blog non è approvato è raggiungibile solo da :domain/nome-scelto: il sottodominio viene attivato dopo l\'approvazione.',
+    'auth.register.review_path_notice' => 'Finché il blog non è approvato è raggiungibile solo da :domain/nome-scelto. L\'indirizzo di terzo livello si attiva se e quando l\'amministrazione lo abilita.',
     'auth.register.exists_subject' => 'Qualcuno ha provato a registrarsi con il tuo indirizzo',
     'auth.register.exists_body'    => "Ciao,\n\nqualcuno ha provato ad aprire un nuovo account su :site usando questo indirizzo email, che risulta già registrato.\n\nSe sei stato tu, ti basta accedere:\n:login\n\nSe hai dimenticato la password, puoi reimpostarla qui:\n:reset\n\nSe non sei stato tu, non devi fare nulla: nessun account è stato creato e nessuna informazione è stata mostrata a chi ha compilato il modulo.\n",
 

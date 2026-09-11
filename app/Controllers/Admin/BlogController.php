@@ -17,7 +17,7 @@ final class BlogController extends AdminController
     /** Azioni ammesse su un blog. */
     private const ACTIONS = [
         'approva', 'nascondi', 'mostra', 'segnala', 'rimuovi-segnalazione',
-        'consenti-html', 'revoca-html', 'elimina',
+        'consenti-html', 'revoca-html', 'terzo-livello', 'solo-percorso', 'elimina',
     ];
 
     /** Stati su cui si può filtrare l'elenco. */
@@ -139,6 +139,8 @@ final class BlogController extends AdminController
             'rimuovi-segnalazione' => ['flagged' => false, 'to_review' => false],
             'consenti-html'        => ['allow_raw_html' => true],
             'revoca-html'          => ['allow_raw_html' => false],
+            'terzo-livello'        => ['use_subdomain' => true],
+            'solo-percorso'        => ['use_subdomain' => false],
             default                => [],
         });
 
@@ -157,6 +159,8 @@ final class BlogController extends AdminController
             'rimuovi-segnalazione' => __('admin.blogs.done.rimuovi_segnalazione', ['blog' => $subdomain]),
             'consenti-html'        => __('admin.blogs.done.consenti_html', ['blog' => $subdomain]),
             'revoca-html'          => __('admin.blogs.done.revoca_html', ['blog' => $subdomain]),
+            'terzo-livello'        => __('admin.blogs.done.terzo_livello', ['blog' => $subdomain]),
+            'solo-percorso'        => __('admin.blogs.done.solo_percorso', ['blog' => $subdomain]),
             default                => __('admin.blogs.done.generic', ['blog' => $subdomain]),
         });
 

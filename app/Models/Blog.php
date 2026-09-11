@@ -27,6 +27,7 @@ final class Blog extends Model
         'subscriptions_active'  => 'bool',
         'discoverable'          => 'bool',
         'reviewed'              => 'bool',
+        'use_subdomain'         => 'bool',
         'hidden'                => 'bool',
         'flagged'               => 'bool',
         'to_review'             => 'bool',
@@ -62,6 +63,7 @@ final class Blog extends Model
     public bool $subscriptions_active = false;
     public bool $discoverable = true;
     public bool $reviewed = false;
+    public bool $use_subdomain = false;
     public bool $hidden = false;
     public bool $flagged = false;
     public bool $to_review = false;
@@ -176,8 +178,46 @@ final class Blog extends Model
     // Creazione e aggiornamento
     // -----------------------------------------------------------------------
 
+    /**
+     * Aggiunge use_subdomain alle installazioni già vive.
+     *
+     * I blog già approvati restano sul terzo livello, così i link pubblici
+     * non cambiano al primo deploy. I blog nuovi restano sul percorso finché
+     * l'amministrazione non attiva il sottodominio.
+     */
+    public static function ensureRoutingColumn(): void
+    {
+        static $done = false;
+        if ($done) {
+            return;
+        }
+        $done = true;
+
+        $db = self::db();
+        if ($db->columnExists('blogs', 'use_subdomain')) {
+            return;
+        }
+
+        try {
+            $db->query(
+                'ALTER TABLE {{blogs}} ADD COLUMN `use_subdomain` TINYINT(1) NOT NULL DEFAULT 0 AFTER `reviewed`'
+            );
+            $db->query('UPDATE {{blogs}} SET use_subdomain = 1 WHERE reviewed = 1');
+        } catch (\Throwable $e) {
+            // Due richieste in parallelo possono arrivarci insieme: la seconda
+            // trova la colonna già creata e va avanti. Se la colonna manca
+            // ancora, l'utente del database non può fare ALTER: meglio
+            // fermarsi che trattare tutti i blog come «solo percorso».
+            if (!$db->columnExists('blogs', 'use_subdomain')) {
+                throw $e;
+            }
+        }
+    }
+
     public static function create(User $user, string $subdomain, string $title, string $content = ''): self
     {
+        self::ensureRoutingColumn();
+
         $blog = new self();
         $blog->user_id = $user->id;
         $blog->subdomain = mb_strtolower(trim($subdomain));
@@ -278,6 +318,7 @@ final class Blog extends Model
                         'site'      => $site,
                         'title'     => $this->title,
                         'email'     => $ownerEmail,
+                        'blog_url'  => Url::blogRoot($this),
                         'path'      => $path,
                         'subdomain' => $subdomain,
                     ]),
@@ -299,11 +340,13 @@ final class Blog extends Model
                 __('blog.approved.email_subject', [
                     'title'     => $this->title,
                     'site'      => $site,
+                    'blog_url'  => Url::blogRoot($this),
                     'subdomain' => $subdomain,
                 ]),
                 __('blog.approved.email_body', [
                     'site'       => $site,
                     'title'      => $this->title,
+                    'blog_url'   => Url::blogRoot($this),
                     'path'       => $path,
                     'subdomain'  => $subdomain,
                     'dashboard'  => Url::platform('/dashboard/' . $this->subdomain),
@@ -343,7 +386,7 @@ final class Blog extends Model
             'lang', 'blog_path', 'theme', 'custom_css', 'overwrite_styles',
             'header_directive', 'footer_directive', 'date_format', 'post_template',
             'robots_txt', 'rss_alias', 'domain', 'analytics_active', 'upvotes_active',
-            'allow_raw_html', 'subscriptions_active', 'discoverable', 'reviewed', 'hidden', 'flagged',
+            'allow_raw_html', 'subscriptions_active', 'discoverable', 'reviewed', 'use_subdomain', 'hidden', 'flagged',
             'to_review', 'dodginess_score', 'reviewer_note', 'storage_used',
             'all_tags', 'last_posted_at', 'posts_last_12h',
         ];

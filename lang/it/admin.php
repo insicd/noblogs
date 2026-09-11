@@ -111,6 +111,10 @@ return [
     'admin.blogs.state.hidden'   => 'Nascosto',
     'admin.blogs.state.flagged'  => 'Segnalato',
     'admin.blogs.state.raw_html' => 'HTML libero',
+    'admin.blogs.state.path'      => 'Percorso',
+    'admin.blogs.state.subdomain' => 'Terzo livello',
+
+    'admin.blogs.routing_hint' => 'Attiva il terzo livello solo dopo aver creato il sottodominio. Tutti i link pubblici (vetrina e esplora compresi) seguono questa scelta. Prima dell\'approvazione il blog resta sul percorso.',
 
     'admin.blogs.action.approva'              => 'Approva',
     'admin.blogs.action.nascondi'             => 'Nascondi',
@@ -119,6 +123,8 @@ return [
     'admin.blogs.action.rimuovi_segnalazione' => 'Togli la segnalazione',
     'admin.blogs.action.consenti_html'        => 'Consenti HTML',
     'admin.blogs.action.revoca_html'          => 'Revoca HTML',
+    'admin.blogs.action.terzo_livello'        => 'Terzo livello',
+    'admin.blogs.action.solo_percorso'        => 'Solo percorso',
     'admin.blogs.action.elimina'              => 'Elimina',
 
     'admin.blogs.done.approva'              => 'Blog :blog approvato.',
@@ -128,14 +134,16 @@ return [
     'admin.blogs.done.rimuovi_segnalazione' => 'Segnalazione rimossa dal blog :blog.',
     'admin.blogs.done.consenti_html'        => 'Il blog :blog può ora usare HTML libero nei contenuti.',
     'admin.blogs.done.revoca_html'          => 'HTML libero revocato al blog :blog.',
+    'admin.blogs.done.terzo_livello'        => 'Blog :blog: i link pubblici puntano al terzo livello.',
+    'admin.blogs.done.solo_percorso'        => 'Blog :blog: i link pubblici restano sul percorso.',
     'admin.blogs.done.generic'              => 'Blog :blog aggiornato.',
 
     'admin.blogs.error.not_found' => 'Questo blog non esiste più.',
 
     'admin.review.email_subject' => 'Nuovo blog in attesa di approvazione: :title',
-    'admin.review.email_body'    => "È stato creato un nuovo blog su :site, in attesa di approvazione.\n\nTitolo: :title\nAccount: :email\nRaggiungibile ora: :path\nDopo l'approvazione: :subdomain\n\nApri il blog:\n:blog_url\n\nCoda di revisione:\n:admin_url\n",
+    'admin.review.email_body'    => "È stato creato un nuovo blog su :site, in attesa di approvazione.\n\nTitolo: :title\nAccount: :email\nRaggiungibile ora: :path\nTerzo livello (quando lo attivi): :subdomain\n\nApri il blog:\n:blog_url\n\nCoda di revisione:\n:admin_url\n",
     'admin.review.approved_email_subject' => 'Blog approvato: :title',
-    'admin.review.approved_email_body'    => "Hai approvato il blog «:title» su :site. Il dominio di terzo livello è attivo.\n\nTerzo livello: :subdomain\nPercorso (resta valido): :path\nAccount: :email\n",
+    'admin.review.approved_email_body'    => "Hai approvato il blog «:title» su :site.\n\nIndirizzo pubblico: :blog_url\nPercorso: :path\nTerzo livello: :subdomain\nAccount: :email\n",
 
     'admin.blogs.delete.title'          => 'Elimina :blog',
     'admin.blogs.delete.heading'        => 'Stai per eliminare «:blog»',
@@ -248,14 +256,14 @@ return [
     'admin.settings.tagline'            => 'Motto',
     'admin.settings.tagline_hint'       => 'Una riga sotto il nome, nella pagina iniziale e nei metadati.',
     'admin.settings.contact_email'      => 'Email di contatto',
-    'admin.settings.contact_email_hint' => 'Mostrata nelle pagine pubbliche a chi deve segnalare un abuso, e usata per avvisarti quando un blog nuovo è in attesa di approvazione e quando lo approvi (conferma del terzo livello). Lasciala vuota per non pubblicarla: in quel caso vale l\'indirizzo di config/config.php.',
+    'admin.settings.contact_email_hint' => 'Mostrata nelle pagine pubbliche a chi deve segnalare un abuso, e usata per avvisarti quando un blog nuovo è in attesa di approvazione e quando lo approvi. Lasciala vuota per non pubblicarla: in quel caso vale l\'indirizzo di config/config.php.',
 
     'admin.settings.registration_open'      => 'Registrazioni aperte',
     'admin.settings.registration_open_hint' => 'Togliendo la spunta il modulo di registrazione resta raggiungibile ma rifiuta i nuovi account. Gli account esistenti non sono toccati.',
     'admin.settings.verify_email'           => 'Richiedi la verifica dell\'email',
     'admin.settings.verify_email_hint'      => 'Senza verifica non si possono creare blog. È la prima barriera contro le registrazioni automatiche.',
     'admin.settings.review_blogs'           => 'Richiedi la revisione dei nuovi blog',
-    'admin.settings.review_blogs_hint'      => 'I blog nuovi restano fuori dagli indici e dalla vetrina finché un moderatore non li approva. Restano comunque leggibili da chi ne ha l\'indirizzo (via percorso sul dominio principale, finché il terzo livello non viene creato).',
+    'admin.settings.review_blogs_hint'      => 'I blog nuovi restano fuori dagli indici e dalla vetrina finché un moderatore non li approva. Restano comunque leggibili da chi ne ha l\'indirizzo, di solito via percorso sul dominio principale. Il terzo livello si attiva blog per blog, dopo aver creato il sottodominio.',
 
     'admin.settings.blogs_per_user'      => 'Blog per utente',
     'admin.settings.blogs_per_user_hint' => 'Vale per i nuovi account; il limite di un singolo utente si cambia dalla pagina Utenti.',
