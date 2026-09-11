@@ -32,14 +32,6 @@ $this->start('content');
   <div class="pf-hero-text">
     <h1><?= e(__('platform.home.heading')) ?></h1>
     <p class="pf-lead"><?= e(__('platform.home.lead')) ?></p>
-
-    <?php if ($stats['blogs'] > 0 || $stats['posts'] > 0): ?>
-      <p class="pf-stats">
-        <strong><?= e($number($stats['blogs'])) ?></strong> <?= e(__('platform.home.stats_blogs')) ?>
-        <span aria-hidden="true">·</span>
-        <strong><?= e($number($stats['posts'])) ?></strong> <?= e(__('platform.home.stats_posts')) ?>
-      </p>
-    <?php endif; ?>
   </div>
 
   <div class="pf-hero-form">
