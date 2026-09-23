@@ -114,6 +114,9 @@ return [
     // -----------------------------------------------------------------------
     'mail' => [
         'driver'   => 'mail',
+        // Email all'amministrazione quando nasce un blog in attesa di revisione.
+        // Si può spegnere anche dalle impostazioni del pannello.
+        'notify_new_blog' => true,
         'smtp' => [
             'host'       => 'localhost',
             'port'       => 587,

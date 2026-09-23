@@ -256,7 +256,7 @@ return [
     'admin.settings.tagline'            => 'Tagline',
     'admin.settings.tagline_hint'       => 'One line under the name, on the landing page and in the metadata.',
     'admin.settings.contact_email'      => 'Contact email',
-    'admin.settings.contact_email_hint' => 'Shown on public pages to whoever needs to report abuse, and used to notify you when a new blog is awaiting approval and when you approve it. Leave empty not to publish it: the address in config/config.php is used instead.',
+    'admin.settings.contact_email_hint' => 'Shown on public pages to whoever needs to report abuse. If set it is also used for staff mail (new blogs awaiting review, when that notice is on, and a confirmation when you approve). Leave empty not to publish it: the address in config/config.php is used instead.',
 
     'admin.settings.registration_open'      => 'Registrations open',
     'admin.settings.registration_open_hint' => 'Unchecked, the sign-up form stays reachable but refuses new accounts. Existing accounts are untouched.',
@@ -264,6 +264,8 @@ return [
     'admin.settings.verify_email_hint'      => 'Without verification no blog can be created. It is the first barrier against automated sign-ups.',
     'admin.settings.review_blogs'           => 'Require review of new blogs',
     'admin.settings.review_blogs_hint'      => 'New blogs stay out of search engines and out of the showcase until a moderator approves them. They remain readable to anyone with the address, usually via the path on the main domain. The third-level host is switched on per blog, after the subdomain has been created.',
+    'admin.settings.notify_new_blog'        => 'Email the administrators when a new blog is created',
+    'admin.settings.notify_new_blog_hint'   => 'Sends a message to the contact address when someone creates a blog awaiting review. The review queue in the admin panel stays available either way.',
 
     'admin.settings.blogs_per_user'      => 'Blogs per user',
     'admin.settings.blogs_per_user_hint' => 'Applies to new accounts; a single user\'s limit is changed from the Users page.',

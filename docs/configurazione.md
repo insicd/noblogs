@@ -123,6 +123,7 @@ conservazione. Senza cron il database cresce e basta.
 | Chiave | Cosa fa |
 |---|---|
 | `mail.driver` | `mail` usa `mail()` di PHP. `smtp` si collega a un server. `log` scrive in `storage/logs/mail.log` senza inviare. |
+| `mail.notify_new_blog` | Se `true`, l'amministrazione riceve una email quando nasce un blog da revisionare. Si cambia anche dal pannello. |
 | `mail.smtp.host` / `port` / `user` / `password` | Credenziali SMTP. |
 | `mail.smtp.encryption` | `tls`, `ssl` oppure `null`. |
 

@@ -259,7 +259,7 @@ final class Blog extends Model
      */
     public function notifyPendingReview(User $owner): void
     {
-        if ($this->reviewed) {
+        if ($this->reviewed || !self::shouldNotifyNewBlog()) {
             return;
         }
 
@@ -364,6 +364,16 @@ final class Blog extends Model
             return '';
         }
         return $to;
+    }
+
+    /** L'istanza vuole la mail di coda quando nasce un blog da revisionare. */
+    private static function shouldNotifyNewBlog(): bool
+    {
+        $stored = Setting::get('mail.notify_new_blog');
+        if ($stored !== null) {
+            return Setting::bool('mail.notify_new_blog', true);
+        }
+        return (bool) Config::get('mail.notify_new_blog', true);
     }
 
     /** @param callable():void $send */

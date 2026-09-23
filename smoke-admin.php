@@ -147,7 +147,7 @@ run('admin -> sospendi utente', function () use ($tenant, $plain, $csrf) {
 run('admin -> salva impostazioni', function () use ($tenant, $csrf) {
     return (new Admin\SettingsController(req('POST', '/admin/impostazioni', [
         '_token' => $csrf, 'site_name' => 'Prova', 'tagline' => 'motto', 'contact_email' => 'a@b.it',
-        'verify_email' => '1', 'review_blogs' => '1', 'registration_open' => '1',
+        'verify_email' => '1', 'review_blogs' => '1', 'notify_new_blog' => '1', 'registration_open' => '1',
         'blogs_per_user' => '5', 'posts_per_blog' => '100', 'storage_per_blog' => '200', 'upload_max' => '8',
         'notice' => 'Avviso di prova',
     ]), $tenant))->edit();

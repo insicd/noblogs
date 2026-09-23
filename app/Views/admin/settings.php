@@ -88,6 +88,15 @@ $this->end();
         <p class="admin-hint"><?= e(__('admin.settings.review_blogs_hint')) ?></p>
       </div>
     </div>
+
+    <div class="admin-check">
+      <input type="checkbox" id="notify_new_blog" name="notify_new_blog" value="1"
+             <?= $checked('notify_new_blog', (bool) $values['notify_new_blog']) ? 'checked' : '' ?>>
+      <div>
+        <label for="notify_new_blog"><?= e(__('admin.settings.notify_new_blog')) ?></label>
+        <p class="admin-hint"><?= e(__('admin.settings.notify_new_blog_hint')) ?></p>
+      </div>
+    </div>
   </div>
 
   <div class="admin-card">
