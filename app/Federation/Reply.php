@@ -24,7 +24,7 @@ final class Reply
 
     public static function send(Blog $blog, ApNotification $comment, string $text): ?ApNotification
     {
-        if (!ActivityPub::blogEnabled($blog) || $comment->type !== 'comment') {
+        if (!ActivityPub::blogEnabled($blog) || $comment->type !== 'comment' || $comment->isDeleted()) {
             return null;
         }
         $inReplyTo = trim((string) $comment->object_id);

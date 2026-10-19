@@ -500,6 +500,7 @@ return [
     'federation.event.follow'             => ':who ha iniziato a seguirti.',
     'federation.event.unfollow'           => ':who non ti segue più.',
     'federation.event.comment'            => ':who ha commentato «:title».',
+    'federation.event.comment_deleted'    => ':who ha eliminato un commento su «:title».',
     'federation.event.like'               => ':who ha apprezzato «:title».',
     'federation.event.announce'           => ':who ha condiviso «:title».',
     'federation.event.reply'              => 'Hai risposto a un commento su «:title».',
@@ -508,6 +509,7 @@ return [
     'federation.inbox.intro'              => 'I commenti arrivati da Mastodon e dal resto del fediverso. Puoi rispondere da qui: il messaggio parte verso chi ha scritto. Il tuo indirizzo è :handle.',
     'federation.inbox.empty'              => 'Ancora nessun commento dal fediverso.',
     'federation.inbox.commented'          => 'ha commentato «:title».',
+    'federation.inbox.deleted'            => 'Questo commento è stato eliminato.',
     'federation.reply.open'               => 'Rispondi',
     'federation.reply.label'              => 'Risposta',
     'federation.reply.hint'               => 'Testo semplice. Arriva come risposta al commento, visibile anche a chi ti segue.',
@@ -519,4 +521,5 @@ return [
     'federation.reply.sent'               => 'Risposta inviata.',
     'federation.reply.disabled'           => 'La federazione è spenta: non si può rispondere.',
     'federation.reply.unavailable'        => 'Questo commento non ha un indirizzo a cui rispondere.',
+    'federation.reply.deleted'            => 'Questo commento è stato eliminato: non si può più rispondere.',
 ];

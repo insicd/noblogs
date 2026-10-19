@@ -50,10 +50,11 @@ $this->layout('layouts/dashboard');
       <?php
         $post = $item->post();
         $thread = $replies[$item->id] ?? [];
-        $canReply = $enabled && is_string($item->object_id) && $item->object_id !== '';
+        $deleted = $item->isDeleted();
+        $canReply = $enabled && !$deleted && is_string($item->object_id) && $item->object_id !== '';
         $isOpen = $openId === $item->id;
       ?>
-      <li class="fed-item" id="commento-<?= e((string) $item->id) ?>">
+      <li class="fed-item<?= $deleted ? ' is-deleted' : '' ?>" id="commento-<?= e((string) $item->id) ?>">
         <?php if ($item->avatar_url): ?>
           <img class="fed-avatar" src="<?= e($item->avatar_url) ?>" alt="" width="40" height="40" loading="lazy">
         <?php else: ?>
@@ -66,7 +67,9 @@ $this->layout('layouts/dashboard');
                 'title' => $post !== null ? $post->title : __('federation.a_post'),
             ])) ?>
           </p>
-          <?php if ($item->content !== null && trim($item->content) !== ''): ?>
+          <?php if ($deleted): ?>
+            <p class="fed-deleted"><?= e(__('federation.inbox.deleted')) ?></p>
+          <?php elseif ($item->content !== null && trim($item->content) !== ''): ?>
             <blockquote class="fed-quote"><?= e($item->content) ?></blockquote>
           <?php endif; ?>
           <div class="fed-meta">
@@ -109,7 +112,7 @@ $this->layout('layouts/dashboard');
                 </p>
               </form>
             </details>
-          <?php elseif ($enabled): ?>
+          <?php elseif ($enabled && !$deleted): ?>
             <p class="hint"><?= e(__('federation.reply.unavailable')) ?></p>
           <?php endif; ?>
         </div>

@@ -993,6 +993,12 @@ pre.sample {
   box-shadow: inset 3px 0 0 var(--accent);
   border-radius: var(--radius);
 }
+.fed-item.is-deleted { opacity: .78; }
+.fed-deleted {
+  margin: .3rem 0;
+  color: var(--ink-soft);
+  font-style: italic;
+}
 .fed-avatar {
   width: 40px;
   height: 40px;

@@ -103,7 +103,7 @@ $this->layout('layouts/dashboard');
     <ul class="fed-list">
       <?php foreach ($notifications as $item): ?>
         <?php $post = $item->post(); ?>
-        <li class="fed-item<?= $item->is_read ? '' : ' is-unread' ?>">
+        <li class="fed-item<?= $item->is_read ? '' : ' is-unread' ?><?= $item->isDeleted() ? ' is-deleted' : '' ?>">
           <?php if ($item->avatar_url): ?>
             <img class="fed-avatar" src="<?= e($item->avatar_url) ?>" alt="" width="40" height="40" loading="lazy">
           <?php else: ?>
@@ -114,7 +114,7 @@ $this->layout('layouts/dashboard');
               <?= e(match ($item->type) {
                   'follow'    => __('federation.event.follow', ['who' => $item->actorLabel()]),
                   'unfollow'  => __('federation.event.unfollow', ['who' => $item->actorLabel()]),
-                  'comment'   => __('federation.event.comment', [
+                  'comment'   => __($item->isDeleted() ? 'federation.event.comment_deleted' : 'federation.event.comment', [
                       'who'   => $item->actorLabel(),
                       'title' => $post !== null ? $post->title : __('federation.a_post'),
                   ]),
@@ -132,7 +132,9 @@ $this->layout('layouts/dashboard');
                   default     => $item->actorLabel(),
               }) ?>
             </p>
-            <?php if ($item->content !== null && trim($item->content) !== ''): ?>
+            <?php if ($item->isDeleted()): ?>
+              <p class="fed-deleted"><?= e(__('federation.inbox.deleted')) ?></p>
+            <?php elseif ($item->content !== null && trim($item->content) !== ''): ?>
               <blockquote class="fed-quote"><?= e($item->content) ?></blockquote>
             <?php endif; ?>
             <div class="fed-meta">
@@ -142,7 +144,7 @@ $this->layout('layouts/dashboard');
                 · <a href="<?= e(Url::post($blog, $post->slug)) ?>" rel="noopener"><?= e($post->title) ?></a>
               <?php endif; ?>
               · <a href="<?= e($item->actor_id) ?>" rel="noopener noreferrer"><?= e(__('federation.open_profile')) ?></a>
-              <?php if ($item->type === 'comment'): ?>
+              <?php if ($item->type === 'comment' && !$item->isDeleted()): ?>
                 · <a href="<?= e(Url::to($base . '/fediverso#commento-' . $item->id)) ?>"><?= e(__('federation.reply.open')) ?></a>
               <?php endif; ?>
             </div>

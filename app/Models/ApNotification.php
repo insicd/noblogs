@@ -33,6 +33,7 @@ final class ApNotification extends Model
     public ?string $activity_id = null;
     public ?string $object_id = null;
     public bool $is_read = false;
+    public ?string $deleted_at = null;
     public string $created_at = '';
 
     public static function unreadCount(int $blogId): int
@@ -86,6 +87,7 @@ final class ApNotification extends Model
                 'activity_id'  => $activityId !== '' ? $activityId : null,
                 'object_id'    => $data['object_id'] ?? null,
                 'is_read'      => !empty($data['is_read']) ? 1 : 0,
+                'deleted_at'   => null,
                 'created_at'   => self::now(),
             ]);
         } catch (\Throwable) {
@@ -157,6 +159,68 @@ final class ApNotification extends Model
         }
         $this->is_read = true;
         $this->updateRow(['is_read' => 1]);
+    }
+
+    public function isDeleted(): bool
+    {
+        return $this->deleted_at !== null && $this->deleted_at !== '';
+    }
+
+    public function markDeleted(): void
+    {
+        if ($this->isDeleted()) {
+            return;
+        }
+        $this->content = null;
+        $this->is_read = true;
+        $this->deleted_at = self::now();
+        $this->updateRow([
+            'content'    => null,
+            'is_read'    => 1,
+            'deleted_at' => $this->deleted_at,
+        ]);
+    }
+
+    /**
+     * Un Delete remoto della Note: i commenti restano visibili come
+     * eliminati, like e boost si tolgono.
+     *
+     * @param list<string> $objectIds
+     */
+    public static function tombstoneByObject(Blog $blog, string $actorId, array $objectIds): void
+    {
+        Schema::ensure();
+        foreach ($objectIds as $objectId) {
+            if ($objectId === '') {
+                continue;
+            }
+            foreach (self::hydrateAll(self::db()->fetchAll(
+                'SELECT * FROM {{ap_notifications}}
+                 WHERE blog_id = ? AND actor_id = ? AND object_id = ?',
+                [$blog->id, $actorId, $objectId]
+            )) as $row) {
+                if (in_array($row->type, ['comment', 'reply'], true)) {
+                    $row->markDeleted();
+                } else {
+                    $row->delete();
+                }
+            }
+        }
+    }
+
+    public static function tombstoneByActor(Blog $blog, string $actorId): void
+    {
+        Schema::ensure();
+        foreach (self::hydrateAll(self::db()->fetchAll(
+            'SELECT * FROM {{ap_notifications}} WHERE blog_id = ? AND actor_id = ?',
+            [$blog->id, $actorId]
+        )) as $row) {
+            if (in_array($row->type, ['comment', 'reply'], true)) {
+                $row->markDeleted();
+            } else {
+                $row->delete();
+            }
+        }
     }
 
     public function post(): ?Post

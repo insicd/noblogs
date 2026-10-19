@@ -60,7 +60,13 @@ final class Inbox
                 $blog = self::blogFromPayload(['object' => $fetched] + $payload);
             }
         }
-        if ($blog === null || !ActivityPub::blogEnabled($blog)) {
+        if ($blog === null && $type === 'Delete') {
+            $blog = self::blogFromStoredObject($payload);
+        }
+        if ($blog === null) {
+            return 404;
+        }
+        if ($type !== 'Delete' && !ActivityPub::blogEnabled($blog)) {
             return 404;
         }
 
@@ -70,7 +76,7 @@ final class Inbox
             'Create' => self::create($blog, $payload, $remote),
             'Like' => self::like($blog, $payload, $remote, 'like'),
             'Announce' => self::like($blog, $payload, $remote, 'announce'),
-            'Delete' => self::delete($blog, $payload),
+            'Delete' => self::delete($blog, $payload, $remote),
             'Update' => self::create($blog, $payload, $remote),
             default => 202,
         };
@@ -220,18 +226,58 @@ final class Inbox
         return 202;
     }
 
-    /** @param array<string,mixed> $payload */
-    private static function delete(Blog $blog, array $payload): int
+    /**
+     * @param array<string,mixed> $payload
+     * @param array<string,mixed> $remote
+     */
+    private static function delete(Blog $blog, array $payload, array $remote): int
     {
-        $objectId = self::idOf($payload['object'] ?? null);
-        if ($objectId === '') {
+        $actorId = (string) ($remote['actor_id'] ?? '');
+        $object = $payload['object'] ?? null;
+        $objectId = self::idOf($object);
+        if ($actorId === '' || $objectId === '') {
             return 202;
         }
-        Database::instance()->query(
-            'DELETE FROM {{ap_notifications}} WHERE blog_id = ? AND object_id = ?',
-            [$blog->id, $objectId]
-        );
+
+        $objectType = is_array($object) ? self::typeOf($object['type'] ?? null) : '';
+        $formerType = is_array($object) ? self::typeOf($object['formerType'] ?? null) : '';
+        $isActor = $objectId === $actorId
+            || in_array($objectType, ['Person', 'Service', 'Application', 'Group'], true)
+            || ($objectType === 'Tombstone' && in_array($formerType, ['Person', 'Service', 'Application', 'Group'], true));
+
+        if ($isActor) {
+            ApNotification::tombstoneByActor($blog, $actorId);
+            return 202;
+        }
+
+        $ids = self::idsOf($object);
+        if (is_array($object)) {
+            foreach (self::idsOf($object['atomUri'] ?? null) as $id) {
+                $ids[] = $id;
+            }
+        }
+        ApNotification::tombstoneByObject($blog, $actorId, array_values(array_unique($ids)));
         return 202;
+    }
+
+    /**
+     * Un Delete di commento ha come object la Note remota: sulla shared inbox
+     * il blog si ricava dalla notifica già salvata, non dall'URL dell'oggetto.
+     *
+     * @param array<string,mixed> $payload
+     */
+    private static function blogFromStoredObject(array $payload): ?Blog
+    {
+        foreach (self::idsOf($payload['object'] ?? null) as $id) {
+            $row = Database::instance()->fetch(
+                'SELECT blog_id FROM {{ap_notifications}} WHERE object_id = ? LIMIT 1',
+                [$id]
+            );
+            if ($row !== null) {
+                return Blog::find((int) $row['blog_id']);
+            }
+        }
+        return null;
     }
 
     /**

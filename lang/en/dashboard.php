@@ -499,6 +499,7 @@ return [
     'federation.event.follow'              => ':who started following you.',
     'federation.event.unfollow'            => ':who unfollowed you.',
     'federation.event.comment'             => ':who commented on “:title”.',
+    'federation.event.comment_deleted'     => ':who deleted a comment on “:title”.',
     'federation.event.like'                => ':who liked “:title”.',
     'federation.event.announce'            => ':who shared “:title”.',
     'federation.event.reply'               => 'You replied to a comment on “:title”.',
@@ -507,6 +508,7 @@ return [
     'federation.inbox.intro'               => 'Comments that arrived from Mastodon and the rest of the fediverse. You can reply from here: the message goes to whoever wrote it. Your address is :handle.',
     'federation.inbox.empty'               => 'No fediverse comments yet.',
     'federation.inbox.commented'           => 'commented on “:title”.',
+    'federation.inbox.deleted'             => 'This comment was deleted.',
     'federation.reply.open'                => 'Reply',
     'federation.reply.label'               => 'Reply',
     'federation.reply.hint'                => 'Plain text. It is sent as a reply to the comment, and followers can see it too.',
@@ -518,4 +520,5 @@ return [
     'federation.reply.sent'                => 'Reply sent.',
     'federation.reply.disabled'            => 'Federation is off: replies cannot be sent.',
     'federation.reply.unavailable'         => 'This comment has no address to reply to.',
+    'federation.reply.deleted'             => 'This comment was deleted: it can no longer be replied to.',
 ];

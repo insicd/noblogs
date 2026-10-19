@@ -25,6 +25,7 @@ final class Schema
         self::ensureFederationColumn($db);
         self::ensureTables($db);
         self::ensureNotificationParent($db);
+        self::ensureNotificationDeleted($db);
     }
 
     private static function ensureFederationColumn(Database $db): void
@@ -90,6 +91,7 @@ final class Schema
               `activity_id`  VARCHAR(500) DEFAULT NULL,
               `object_id`    VARCHAR(500) DEFAULT NULL,
               `is_read`      TINYINT(1) NOT NULL DEFAULT 0,
+              `deleted_at`   DATETIME DEFAULT NULL,
               `created_at`   DATETIME NOT NULL,
               PRIMARY KEY (`id`),
               UNIQUE KEY `uq_ap_notifications_activity` (`blog_id`,`activity_id`(191)),
@@ -160,6 +162,24 @@ final class Schema
             );
         } catch (\Throwable) {
             // L'indice c'è già, o il motore non lo accetta: si va avanti.
+        }
+    }
+
+    private static function ensureNotificationDeleted(Database $db): void
+    {
+        if (!$db->tableExists('ap_notifications') || $db->columnExists('ap_notifications', 'deleted_at')) {
+            return;
+        }
+
+        try {
+            $db->query(
+                'ALTER TABLE {{ap_notifications}}
+                 ADD COLUMN `deleted_at` DATETIME DEFAULT NULL AFTER `is_read`'
+            );
+        } catch (\Throwable $e) {
+            if (!$db->columnExists('ap_notifications', 'deleted_at')) {
+                throw $e;
+            }
         }
     }
 }

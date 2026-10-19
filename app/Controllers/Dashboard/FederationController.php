@@ -61,6 +61,10 @@ final class FederationController extends DashboardController
         if ($comment === null || $comment->blog_id !== $found->id || $comment->type !== 'comment') {
             return $this->notFound();
         }
+        if ($comment->isDeleted()) {
+            $this->flash('error', __('federation.reply.deleted'));
+            return $this->redirect($location . '#commento-' . $comment->id);
+        }
 
         $text = $this->request->trimmed('body');
         if ($text === '') {
