@@ -479,8 +479,6 @@ thead th {
 }
 
 .pf-fediverse {
-  display: grid;
-  gap: 1.15rem;
   margin-top: 2rem;
   padding: 1.35rem 1.4rem 1.25rem;
   border: 1px solid var(--pf-border);
@@ -488,18 +486,18 @@ thead th {
   background: var(--pf-surface);
 }
 
-@media (min-width: 40rem) {
-  .pf-fediverse {
-    grid-template-columns: auto 1fr;
-    align-items: start;
-    gap: 1.35rem 1.5rem;
-  }
+.pf-fediverse h2.pf-fediverse-heading {
+  display: flex;
+  align-items: center;
+  gap: .75rem;
+  margin: 0 0 .4rem;
 }
 
 .pf-fediverse-mark {
   display: flex;
   align-items: center;
   justify-content: center;
+  flex: 0 0 auto;
   width: 2.75rem;
   height: 2.75rem;
   background: var(--pf-surface-alt);
@@ -510,10 +508,6 @@ thead th {
   display: block;
   width: 1.7rem;
   height: 1.7rem;
-}
-
-.pf-fediverse h2 {
-  margin: 0 0 .4rem;
 }
 
 .pf-fediverse p {
