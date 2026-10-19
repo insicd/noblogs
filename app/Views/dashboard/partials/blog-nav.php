@@ -7,19 +7,22 @@
  */
 
 use Noblogs\Core\Url;
+use Noblogs\Models\ApNotification;
 
 $base = '/dashboard/' . $blog->subdomain;
+$unread = ApNotification::unreadCount($blog->id);
 
 $sections = [
-    'overview'    => ['', __('dashboard.nav.overview')],
-    'posts'       => ['/articoli', __('dashboard.nav.posts')],
-    'pages'       => ['/pagine', __('dashboard.nav.pages')],
-    'theme'       => ['/aspetto', __('dashboard.nav.theme')],
-    'nav'         => ['/navigazione', __('dashboard.nav.nav')],
-    'analytics'   => ['/statistiche', __('dashboard.nav.analytics')],
-    'media'       => ['/file', __('dashboard.nav.media')],
-    'subscribers' => ['/iscritti', __('dashboard.nav.subscribers')],
-    'settings'    => ['/impostazioni', __('dashboard.nav.settings')],
+    'overview'      => ['', __('dashboard.nav.overview')],
+    'posts'         => ['/articoli', __('dashboard.nav.posts')],
+    'pages'         => ['/pagine', __('dashboard.nav.pages')],
+    'notifications' => ['/notifiche', __('dashboard.nav.notifications')],
+    'theme'         => ['/aspetto', __('dashboard.nav.theme')],
+    'nav'           => ['/navigazione', __('dashboard.nav.nav')],
+    'analytics'     => ['/statistiche', __('dashboard.nav.analytics')],
+    'media'         => ['/file', __('dashboard.nav.media')],
+    'subscribers'   => ['/iscritti', __('dashboard.nav.subscribers')],
+    'settings'      => ['/impostazioni', __('dashboard.nav.settings')],
 ];
 
 $tools = [
@@ -37,7 +40,8 @@ $tools = [
     <?php foreach ($sections as $key => [$path, $label]): ?>
       <li><a href="<?= e(Url::to($base . $path)) ?>"
              class="<?= $section === $key ? 'current' : '' ?>"
-             <?= $section === $key ? 'aria-current="page"' : '' ?>><?= e($label) ?></a></li>
+             <?= $section === $key ? 'aria-current="page"' : '' ?>><?= e($label) ?><?php
+             if ($key === 'notifications' && $unread > 0): ?> <span class="dash-nav-count"><?= e((string) $unread) ?></span><?php endif; ?></a></li>
     <?php endforeach; ?>
   </ul>
 

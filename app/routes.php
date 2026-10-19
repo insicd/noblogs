@@ -13,6 +13,7 @@ declare(strict_types=1);
 use Noblogs\Controllers\Admin;
 use Noblogs\Controllers\Auth;
 use Noblogs\Controllers\Dashboard;
+use Noblogs\Controllers\Federation;
 use Noblogs\Controllers\Platform;
 use Noblogs\Controllers\Site;
 use Noblogs\Core\Request;
@@ -102,6 +103,21 @@ function registerPlatformRoutes(Router $router): void
     $router->get('/robots.txt', [Platform\PageController::class, 'robots']);
     $router->get('/sitemap.xml', [Platform\PageController::class, 'sitemap']);
 
+    // ActivityPub / fediverso: handle nome@istanza, indipendente dal routing
+    // del blog (percorso o terzo livello).
+    $router->get('/.well-known/webfinger', [Federation\DiscoveryController::class, 'webfinger']);
+    $router->get('/.well-known/host-meta', [Federation\DiscoveryController::class, 'hostMeta']);
+    $router->get('/.well-known/nodeinfo', [Federation\DiscoveryController::class, 'nodeInfoIndex']);
+    $router->get('/nodeinfo/2.1', [Federation\DiscoveryController::class, 'nodeInfo']);
+    $router->get('/nodeinfo/2.0', [Federation\DiscoveryController::class, 'nodeInfo']);
+    $router->post('/ap/inbox', [Federation\ActorController::class, 'sharedInbox']);
+    $router->get('/ap/{blog}', [Federation\ActorController::class, 'actor']);
+    $router->get('/ap/{blog}/outbox', [Federation\ActorController::class, 'outbox']);
+    $router->get('/ap/{blog}/followers', [Federation\ActorController::class, 'followers']);
+    $router->get('/ap/{blog}/following', [Federation\ActorController::class, 'following']);
+    $router->get('/ap/{blog}/posts/{uid}', [Federation\ActorController::class, 'post']);
+    $router->post('/ap/{blog}/inbox', [Federation\ActorController::class, 'inbox']);
+
     // Accesso
     $router->any('/accedi', [Auth\LoginController::class, 'login']);
     $router->post('/esci', [Auth\LoginController::class, 'logout']);
@@ -140,6 +156,8 @@ function registerPlatformRoutes(Router $router): void
     $router->any('/dashboard/{blog}/file', [Dashboard\MediaController::class, 'index']);
     $router->post('/dashboard/{blog}/file/{id}/elimina', [Dashboard\MediaController::class, 'destroy']);
     $router->any('/dashboard/{blog}/iscritti', [Dashboard\SubscriberController::class, 'index']);
+    $router->get('/dashboard/{blog}/notifiche', [Dashboard\NotificationController::class, 'index']);
+    $router->post('/dashboard/{blog}/notifiche/lette', [Dashboard\NotificationController::class, 'markRead']);
     $router->get('/dashboard/{blog}/esporta', [Dashboard\ImportExportController::class, 'export']);
     $router->any('/dashboard/{blog}/importa', [Dashboard\ImportExportController::class, 'import']);
 

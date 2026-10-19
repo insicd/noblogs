@@ -78,7 +78,7 @@ return [
         // Sottodomini che nessuno può registrare.
         'reserved_subdomains' => [
             'www', 'mail', 'smtp', 'imap', 'pop', 'ftp', 'ns', 'ns1', 'ns2',
-            'admin', 'api', 'app', 'blog', 'cdn', 'static', 'assets', 'media',
+            'admin', 'api', 'ap', 'app', 'blog', 'cdn', 'static', 'assets', 'media',
             'docs', 'doc', 'help', 'support', 'status', 'dashboard', 'panel',
             'login', 'signup', 'register', 'account', 'accounts', 'user',
             'users', 'test', 'dev', 'staging', 'demo', 'beta', 'noblogs',
@@ -129,5 +129,11 @@ return [
     // -----------------------------------------------------------------------
     // Sviluppo
     // -----------------------------------------------------------------------
+    // Federazione ActivityPub. Ogni blog è un actor nome@dominio, anche se
+    // il sito pubblico gira sul percorso. Si può spegnere dal pannello.
+    'federation' => [
+        'enabled' => true,
+    ],
+
     'debug' => false,
 ];

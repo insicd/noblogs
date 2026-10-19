@@ -97,6 +97,15 @@ $this->end();
         <p class="admin-hint"><?= e(__('admin.settings.notify_new_blog_hint')) ?></p>
       </div>
     </div>
+
+    <div class="admin-check">
+      <input type="checkbox" id="federation" name="federation" value="1"
+             <?= $checked('federation', (bool) $values['federation']) ? 'checked' : '' ?>>
+      <div>
+        <label for="federation"><?= e(__('admin.settings.federation')) ?></label>
+        <p class="admin-hint"><?= e(__('admin.settings.federation_hint')) ?></p>
+      </div>
+    </div>
   </div>
 
   <div class="admin-card">

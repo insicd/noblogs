@@ -80,6 +80,7 @@ final class SettingsController extends DashboardController
                 'upvotes_active'       => $this->request->boolean('upvotes_active'),
                 'subscriptions_active' => $this->request->boolean('subscriptions_active'),
                 'discoverable'         => $this->request->boolean('discoverable'),
+                'federation_active'    => $this->request->boolean('federation_active'),
             ]);
 
             return $this->succeed($return, __('settings.saved'));

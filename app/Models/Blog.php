@@ -26,6 +26,7 @@ final class Blog extends Model
         'allow_raw_html'        => 'bool',
         'subscriptions_active'  => 'bool',
         'discoverable'          => 'bool',
+        'federation_active'     => 'bool',
         'reviewed'              => 'bool',
         'use_subdomain'         => 'bool',
         'hidden'                => 'bool',
@@ -62,6 +63,7 @@ final class Blog extends Model
     public bool $allow_raw_html = false;
     public bool $subscriptions_active = false;
     public bool $discoverable = true;
+    public bool $federation_active = true;
     public bool $reviewed = false;
     public bool $use_subdomain = false;
     public bool $hidden = false;
@@ -396,7 +398,7 @@ final class Blog extends Model
             'lang', 'blog_path', 'theme', 'custom_css', 'overwrite_styles',
             'header_directive', 'footer_directive', 'date_format', 'post_template',
             'robots_txt', 'rss_alias', 'domain', 'analytics_active', 'upvotes_active',
-            'allow_raw_html', 'subscriptions_active', 'discoverable', 'reviewed', 'use_subdomain', 'hidden', 'flagged',
+            'allow_raw_html', 'subscriptions_active', 'discoverable', 'federation_active', 'reviewed', 'use_subdomain', 'hidden', 'flagged',
             'to_review', 'dodginess_score', 'reviewer_note', 'storage_used',
             'all_tags', 'last_posted_at', 'posts_last_12h',
         ];

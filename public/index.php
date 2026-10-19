@@ -17,6 +17,8 @@ use Noblogs\Core\Session;
 use Noblogs\Core\Tenant;
 use Noblogs\Core\Url;
 use Noblogs\Core\View;
+use Noblogs\Federation\ActivityPub;
+use Noblogs\Federation\Schema;
 use Noblogs\Models\Blog;
 
 View::setBasePath(NOBLOGS_APP . '/Views');
@@ -38,6 +40,7 @@ if (!Config::isInstalled()) {
 try {
     Database::instance();
     Blog::ensureRoutingColumn();
+    Schema::ensure();
 } catch (\Throwable $e) {
     ErrorHandler::log($e);
     Response::html(View::make('errors/database', ['debug' => Config::get('debug', false), 'error' => $e]), 503)
@@ -56,7 +59,9 @@ if ($redirect = $tenant->canonicalRedirect($request)) {
 
 // La sessione serve solo alla piattaforma: sui blog pubblici non si apre,
 // così i lettori non ricevono nessun cookie.
-if ($tenant->isPlatform()) {
+// Le richieste ActivityPub (WebFinger, inbox) non aprono una sessione:
+// i server remoti non sono visitatori e un Set-Cookie li confonderebbe.
+if ($tenant->isPlatform() && !ActivityPub::isProtocolPath($request->path)) {
     Session::start();
     if ($switch = I18n::consumeSwitch($request)) {
         $switch->send();

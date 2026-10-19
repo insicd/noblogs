@@ -73,7 +73,7 @@ return [
     'admin.maintenance.intro'     => 'Removes analytics past the retention window, never-confirmed subscriptions and expired cache entries; re-syncs themes and recomputes blog counters.',
     'admin.maintenance.cron_hint' => 'The same work can be scheduled with «bin/noblogs manutenzione»: if you have cron access, prefer that.',
     'admin.maintenance.run'       => 'Run maintenance',
-    'admin.maintenance.done'      => 'Maintenance done: :hits reads removed, :subscribers stale subscriptions, :cache cache entries, :themes themes synced, :blogs blogs recomputed.',
+    'admin.maintenance.done'      => 'Maintenance done: :hits reads removed, :subscribers stale subscriptions, :cache cache entries, :themes themes synced, :blogs blogs recomputed, :federation federated activities.',
 
     // ---------------------------------------------------------------------
     // Blogs
@@ -266,6 +266,8 @@ return [
     'admin.settings.review_blogs_hint'      => 'New blogs stay out of search engines and out of the showcase until a moderator approves them. They remain readable to anyone with the address, usually via the path on the main domain. The third-level host is switched on per blog, after the subdomain has been created.',
     'admin.settings.notify_new_blog'        => 'Email the administrators when a new blog is created',
     'admin.settings.notify_new_blog_hint'   => 'Sends a message to the contact address when someone creates a blog awaiting review. The review queue in the admin panel stays available either way.',
+    'admin.settings.federation'             => 'ActivityPub federation',
+    'admin.settings.federation_hint'        => 'Every approved blog is an actor name@instance. Posts go out to fediverse followers; replies land in the author’s dashboard. It can also be turned off per blog.',
 
     'admin.settings.blogs_per_user'      => 'Blogs per user',
     'admin.settings.blogs_per_user_hint' => 'Applies to new accounts; a single user\'s limit is changed from the Users page.',

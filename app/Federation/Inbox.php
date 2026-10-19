@@ -1,0 +1,401 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Noblogs\Federation;
+
+use Noblogs\Core\Database;
+use Noblogs\Core\RateLimiter;
+use Noblogs\Core\Request;
+use Noblogs\Markdown\Sanitizer;
+use Noblogs\Models\ApFollower;
+use Noblogs\Models\ApNotification;
+use Noblogs\Models\Blog;
+use Noblogs\Models\Post;
+use Noblogs\Support\Str;
+
+/**
+ * Attività in arrivo: Follow, Undo, commenti (Create Note), Like, Announce.
+ */
+final class Inbox
+{
+    public static function handle(Request $request, ?Blog $blog): int
+    {
+        Schema::ensure();
+
+        if (RateLimiter::tooManyAttempts('ap-inbox:' . $request->ip(), 60, 300)) {
+            return 429;
+        }
+
+        if (strlen($request->rawBody) > 1048576) {
+            return 413;
+        }
+
+        $payload = json_decode($request->rawBody, true);
+        if (!is_array($payload)) {
+            return 400;
+        }
+
+        $type = (string) ($payload['type'] ?? '');
+        $actorId = self::idOf($payload['actor'] ?? null);
+        if ($actorId === '' || $type === '') {
+            return 400;
+        }
+
+        $remote = self::loadRemote($actorId, $request);
+        if ($remote === null) {
+            return 401;
+        }
+
+        if (!Http::verify($request, (string) ($remote['public_key'] ?? ''))) {
+            return 401;
+        }
+
+        if ($blog === null) {
+            $blog = self::blogFromPayload($payload);
+        }
+        if ($blog === null || !ActivityPub::blogEnabled($blog)) {
+            return 404;
+        }
+
+        return match ($type) {
+            'Follow' => self::follow($blog, $payload, $remote),
+            'Undo' => self::undo($blog, $payload, $remote),
+            'Create' => self::create($blog, $payload, $remote),
+            'Like' => self::like($blog, $payload, $remote, 'like'),
+            'Announce' => self::like($blog, $payload, $remote, 'announce'),
+            'Delete' => self::delete($blog, $payload),
+            'Update' => self::create($blog, $payload, $remote),
+            default => 202,
+        };
+    }
+
+    /**
+     * @param array<string,mixed> $payload
+     * @param array<string,mixed> $remote
+     */
+    private static function follow(Blog $blog, array $payload, array $remote): int
+    {
+        $object = self::idOf($payload['object'] ?? null);
+        if ($object !== '' && $object !== ActivityPub::actorId($blog)) {
+            return 404;
+        }
+
+        ApFollower::upsert($blog, $remote);
+        ApNotification::record($blog, [
+            'type'         => 'follow',
+            'actor_id'     => $remote['actor_id'],
+            'handle'       => $remote['handle'],
+            'display_name' => $remote['display_name'],
+            'avatar_url'   => $remote['avatar_url'],
+            'activity_id'  => self::idOf($payload['id'] ?? null) ?: null,
+        ]);
+
+        $accept = [
+            '@context' => ActivityPub::CONTEXT,
+            'id' => ActivityPub::actorId($blog) . '#accept-' . Str::uid(12),
+            'type' => 'Accept',
+            'actor' => ActivityPub::actorId($blog),
+            'object' => $payload,
+            'to' => [$remote['actor_id']],
+        ];
+        $inbox = (string) ($remote['inbox_url'] ?? '');
+        if ($inbox !== '') {
+            Delivery::enqueue($blog, $accept);
+            Delivery::processDue(2);
+        }
+
+        return 202;
+    }
+
+    /**
+     * @param array<string,mixed> $payload
+     * @param array<string,mixed> $remote
+     */
+    private static function undo(Blog $blog, array $payload, array $remote): int
+    {
+        $inner = $payload['object'] ?? null;
+        $innerType = is_array($inner) ? (string) ($inner['type'] ?? '') : '';
+        $actorId = (string) $remote['actor_id'];
+
+        if ($innerType === 'Follow' || (!is_array($inner) && $inner === ActivityPub::actorId($blog))) {
+            ApFollower::remove($blog, $actorId);
+            ApNotification::record($blog, [
+                'type'         => 'unfollow',
+                'actor_id'     => $actorId,
+                'handle'       => $remote['handle'],
+                'display_name' => $remote['display_name'],
+                'avatar_url'   => $remote['avatar_url'],
+                'activity_id'  => self::idOf($payload['id'] ?? null) ?: null,
+            ]);
+            return 202;
+        }
+
+        if (in_array($innerType, ['Like', 'Announce'], true) && is_array($inner)) {
+            $post = ActivityPub::postFromObjectId(self::idOf($inner['object'] ?? null));
+            if ($post !== null && $post->blog_id === $blog->id) {
+                Database::instance()->query(
+                    'DELETE FROM {{ap_notifications}}
+                     WHERE blog_id = ? AND actor_id = ? AND post_id = ? AND type = ?',
+                    [
+                        $blog->id,
+                        $actorId,
+                        $post->id,
+                        $innerType === 'Announce' ? 'announce' : 'like',
+                    ]
+                );
+            }
+        }
+
+        return 202;
+    }
+
+    /**
+     * @param array<string,mixed> $payload
+     * @param array<string,mixed> $remote
+     */
+    private static function create(Blog $blog, array $payload, array $remote): int
+    {
+        $object = $payload['object'] ?? null;
+        if (!is_array($object)) {
+            return 202;
+        }
+        $objectType = (string) ($object['type'] ?? '');
+        if (!in_array($objectType, ['Note', 'Article', 'Comment'], true)) {
+            return 202;
+        }
+
+        $replyTo = self::idOf($object['inReplyTo'] ?? null);
+        if ($replyTo === '') {
+            return 202;
+        }
+        $post = ActivityPub::postFromObjectId($replyTo);
+        if ($post === null || $post->blog_id !== $blog->id) {
+            return 202;
+        }
+
+        $html = (string) ($object['content'] ?? '');
+        $html = (new Sanitizer())->clean($html);
+        $text = Str::plain(strip_tags($html));
+
+        ApNotification::record($blog, [
+            'type'         => 'comment',
+            'post_id'      => $post->id,
+            'actor_id'     => $remote['actor_id'],
+            'handle'       => $remote['handle'],
+            'display_name' => $remote['display_name'],
+            'avatar_url'   => $remote['avatar_url'],
+            'content'      => Str::limit($text !== '' ? $text : $html, 2000, ''),
+            'activity_id'  => self::idOf($payload['id'] ?? $object['id'] ?? null) ?: null,
+            'object_id'    => self::idOf($object['id'] ?? null) ?: null,
+        ]);
+
+        return 202;
+    }
+
+    /**
+     * @param array<string,mixed> $payload
+     * @param array<string,mixed> $remote
+     */
+    private static function like(Blog $blog, array $payload, array $remote, string $type): int
+    {
+        $post = ActivityPub::postFromObjectId(self::idOf($payload['object'] ?? null));
+        if ($post === null || $post->blog_id !== $blog->id) {
+            return 202;
+        }
+
+        ApNotification::record($blog, [
+            'type'         => $type,
+            'post_id'      => $post->id,
+            'actor_id'     => $remote['actor_id'],
+            'handle'       => $remote['handle'],
+            'display_name' => $remote['display_name'],
+            'avatar_url'   => $remote['avatar_url'],
+            'activity_id'  => self::idOf($payload['id'] ?? null) ?: null,
+            'object_id'    => ActivityPub::objectId($blog, $post),
+        ]);
+
+        return 202;
+    }
+
+    /** @param array<string,mixed> $payload */
+    private static function delete(Blog $blog, array $payload): int
+    {
+        $objectId = self::idOf($payload['object'] ?? null);
+        if ($objectId === '') {
+            return 202;
+        }
+        Database::instance()->query(
+            'DELETE FROM {{ap_notifications}} WHERE blog_id = ? AND object_id = ?',
+            [$blog->id, $objectId]
+        );
+        return 202;
+    }
+
+    /**
+     * @param array<string,mixed> $payload
+     */
+    private static function blogFromPayload(array $payload): ?Blog
+    {
+        foreach (['object', 'target'] as $key) {
+            $id = self::idOf($payload[$key] ?? null);
+            if ($id === '') {
+                continue;
+            }
+            if (preg_match('#/ap/([a-z0-9][a-z0-9-]{0,62})(?:/|$)#', (string) parse_url($id, PHP_URL_PATH), $m) === 1) {
+                $blog = Blog::findBySubdomain($m[1]);
+                if ($blog !== null) {
+                    return $blog;
+                }
+            }
+            $post = ActivityPub::postFromObjectId($id);
+            if ($post !== null) {
+                return Blog::find($post->blog_id);
+            }
+        }
+        return null;
+    }
+
+    /**
+     * @return array<string,mixed>|null
+     */
+    private static function loadRemote(string $actorId, Request $request): ?array
+    {
+        $signature = Http::parseSignatureHeader($request->header('Signature') ?? '')
+            ?? Http::parseSignatureHeader(ltrim(substr($request->header('Authorization') ?? '', 10)))
+            ?? [];
+        $keyId = (string) ($signature['keyId'] ?? $actorId);
+        $fetchUrl = explode('#', $keyId)[0];
+        if ($fetchUrl === '') {
+            $fetchUrl = $actorId;
+        }
+
+        $cached = self::cachedActor($actorId);
+        if ($cached !== null && (time() - strtotime((string) $cached['fetched_at'])) < 86400
+            && (string) ($cached['public_key'] ?? '') !== '') {
+            return $cached;
+        }
+
+        $document = Http::getJson($fetchUrl);
+        if ($document === null && $fetchUrl !== $actorId) {
+            $document = Http::getJson($actorId);
+        }
+        if ($document === null) {
+            return $cached;
+        }
+
+        $parsed = self::parseActor($document, $actorId);
+        if ($parsed === null) {
+            return $cached;
+        }
+        self::storeActor($parsed);
+        return $parsed;
+    }
+
+    /**
+     * @param array<string,mixed> $document
+     * @return array<string,mixed>|null
+     */
+    private static function parseActor(array $document, string $fallbackId): ?array
+    {
+        $id = self::idOf($document['id'] ?? $fallbackId);
+        $inbox = (string) ($document['inbox'] ?? '');
+        if ($id === '' || $inbox === '' || !Http::isSafeUrl($inbox)) {
+            return null;
+        }
+
+        $shared = '';
+        if (isset($document['endpoints']) && is_array($document['endpoints'])) {
+            $shared = (string) ($document['endpoints']['sharedInbox'] ?? '');
+        }
+
+        $publicKey = '';
+        if (isset($document['publicKey']) && is_array($document['publicKey'])) {
+            $publicKey = (string) ($document['publicKey']['publicKeyPem'] ?? '');
+        }
+
+        $handle = null;
+        $preferred = (string) ($document['preferredUsername'] ?? '');
+        $host = parse_url($id, PHP_URL_HOST);
+        if ($preferred !== '' && is_string($host)) {
+            $handle = $preferred . '@' . $host;
+        }
+
+        $avatar = null;
+        if (isset($document['icon'])) {
+            $icon = $document['icon'];
+            if (is_array($icon)) {
+                $avatar = is_string($icon['url'] ?? null) ? (string) $icon['url'] : self::idOf($icon);
+            }
+        }
+
+        return [
+            'actor_id'         => $id,
+            'inbox_url'        => $inbox,
+            'shared_inbox_url' => Http::isSafeUrl($shared) ? $shared : null,
+            'public_key'       => $publicKey,
+            'handle'           => $handle,
+            'display_name'     => isset($document['name']) ? mb_substr((string) $document['name'], 0, 200) : null,
+            'avatar_url'       => is_string($avatar) && Http::isSafeUrl($avatar) ? $avatar : null,
+            'fetched_at'       => gmdate('Y-m-d H:i:s'),
+        ];
+    }
+
+    /** @return array<string,mixed>|null */
+    private static function cachedActor(string $actorId): ?array
+    {
+        Schema::ensure();
+        $row = Database::instance()->fetch(
+            'SELECT * FROM {{ap_remote_actors}} WHERE actor_id = ?',
+            [$actorId]
+        );
+        return $row;
+    }
+
+    /** @param array<string,mixed> $actor */
+    private static function storeActor(array $actor): void
+    {
+        Schema::ensure();
+        $db = Database::instance();
+        $db->query(
+            'INSERT INTO {{ap_remote_actors}}
+                (actor_id, inbox_url, shared_inbox_url, public_key, handle, display_name, avatar_url, fetched_at)
+             VALUES
+                (:actor_id, :inbox_url, :shared_inbox_url, :public_key, :handle, :display_name, :avatar_url, :fetched_at)
+             ON DUPLICATE KEY UPDATE
+                inbox_url = VALUES(inbox_url),
+                shared_inbox_url = VALUES(shared_inbox_url),
+                public_key = VALUES(public_key),
+                handle = VALUES(handle),
+                display_name = VALUES(display_name),
+                avatar_url = VALUES(avatar_url),
+                fetched_at = VALUES(fetched_at)',
+            [
+                'actor_id'         => $actor['actor_id'],
+                'inbox_url'        => $actor['inbox_url'],
+                'shared_inbox_url' => $actor['shared_inbox_url'],
+                'public_key'       => $actor['public_key'],
+                'handle'           => $actor['handle'],
+                'display_name'     => $actor['display_name'],
+                'avatar_url'       => $actor['avatar_url'],
+                'fetched_at'       => $actor['fetched_at'],
+            ]
+        );
+    }
+
+    private static function idOf(mixed $value): string
+    {
+        if (is_string($value)) {
+            return trim($value);
+        }
+        if (is_array($value)) {
+            if (isset($value['id']) && is_string($value['id'])) {
+                return trim($value['id']);
+            }
+            if (array_is_list($value) && isset($value[0])) {
+                return self::idOf($value[0]);
+            }
+        }
+        return '';
+    }
+}

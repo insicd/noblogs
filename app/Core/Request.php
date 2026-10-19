@@ -27,6 +27,12 @@ final class Request
     public readonly array $cookies;
 
     /**
+     * Corpo grezzo della richiesta. Serve all'ActivityPub: la firma HTTP
+     * copre il digest di questi byte, e php://input si può leggere una sola volta.
+     */
+    public readonly string $rawBody;
+
+    /**
      * Segmenti del path già decodificati, senza elementi vuoti.
      *
      * @var list<string>
@@ -47,7 +53,8 @@ final class Request
         array $query = [],
         array $post = [],
         array $files = [],
-        array $cookies = []
+        array $cookies = [],
+        string $rawBody = ''
     ) {
         $this->method = strtoupper($method);
         $this->host = strtolower($host);
@@ -57,6 +64,7 @@ final class Request
         $this->post = $post;
         $this->files = $files;
         $this->cookies = $cookies;
+        $this->rawBody = $rawBody;
         $this->segments = array_values(array_filter(explode('/', trim($path, '/')), 'strlen'));
     }
 
@@ -75,19 +83,17 @@ final class Request
             || strtolower($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '') === 'https';
 
         $method = strtoupper((string) ($_SERVER['REQUEST_METHOD'] ?? 'GET'));
+        $rawBody = (string) (file_get_contents('php://input') ?: '');
         $post = $_POST;
         // Alcuni hosting (CGI/FastCGI) lasciano $_POST vuoto: il corpo c'è
         // comunque in php://input e senza questo i voti e gli hit non arrivano.
-        if ($post === [] && $method === 'POST') {
+        if ($post === [] && $method === 'POST' && $rawBody !== '') {
             $type = strtolower((string) ($_SERVER['CONTENT_TYPE'] ?? ''));
             if ($type === '' || str_contains($type, 'application/x-www-form-urlencoded')) {
-                $raw = file_get_contents('php://input');
-                if (is_string($raw) && $raw !== '') {
-                    $parsed = [];
-                    parse_str($raw, $parsed);
-                    if (is_array($parsed) && $parsed !== []) {
-                        $post = $parsed;
-                    }
+                $parsed = [];
+                parse_str($rawBody, $parsed);
+                if (is_array($parsed) && $parsed !== []) {
+                    $post = $parsed;
                 }
             }
         }
@@ -100,7 +106,8 @@ final class Request
             $_GET,
             $post,
             $_FILES,
-            array_map('strval', $_COOKIE)
+            array_map('strval', $_COOKIE),
+            $rawBody
         );
     }
 
@@ -118,8 +125,25 @@ final class Request
             $this->query,
             $this->post,
             $this->files,
-            $this->cookies
+            $this->cookies,
+            $this->rawBody
         );
+    }
+
+    /**
+     * Valore di `(request-target)` per le firme HTTP, compreso l'eventuale
+     * query string così come è arrivato.
+     */
+    public function signatureTarget(): string
+    {
+        $uri = (string) ($_SERVER['REQUEST_URI'] ?? $this->path);
+        $path = parse_url($uri, PHP_URL_PATH);
+        $path = is_string($path) ? $path : $this->path;
+        $query = parse_url($uri, PHP_URL_QUERY);
+        if (is_string($query) && $query !== '') {
+            $path .= '?' . $query;
+        }
+        return strtolower($this->method) . ' ' . $path;
     }
 
     public function isGet(): bool

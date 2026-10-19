@@ -53,6 +53,7 @@ final class SettingsController extends AdminController
             'verify_email'      => self::settingBool('security.require_email_verification', true),
             'review_blogs'      => self::settingBool('security.require_blog_review', true),
             'notify_new_blog'   => self::settingBool('mail.notify_new_blog', true),
+            'federation'        => self::settingBool('federation.enabled', true),
             'registration_open' => self::settingBool('platform.registration_open', true),
             'blogs_per_user'    => (int) self::setting('limits.blogs_per_user', 3),
             'posts_per_blog'    => (int) self::setting('limits.posts_per_blog', 5000),
@@ -100,6 +101,7 @@ final class SettingsController extends AdminController
         Setting::put('security.require_email_verification', $this->request->boolean('verify_email') ? '1' : '0');
         Setting::put('security.require_blog_review', $this->request->boolean('review_blogs') ? '1' : '0');
         Setting::put('mail.notify_new_blog', $this->request->boolean('notify_new_blog') ? '1' : '0');
+        Setting::put('federation.enabled', $this->request->boolean('federation') ? '1' : '0');
         Setting::put('platform.registration_open', $this->request->boolean('registration_open') ? '1' : '0');
         Setting::put('limits.blogs_per_user', (string) $blogsPerUser);
         Setting::put('limits.posts_per_blog', (string) $postsPerBlog);

@@ -7,6 +7,7 @@ namespace Noblogs\Controllers\Admin;
 use Noblogs\Core\Database;
 use Noblogs\Core\Response;
 use Noblogs\Core\Url;
+use Noblogs\Federation\Delivery;
 use Noblogs\Markdown\Cache;
 use Noblogs\Models\Blog;
 use Noblogs\Models\Hit;
@@ -73,14 +74,16 @@ final class DashboardController extends AdminController
             'cache'       => $report['cache'],
             'themes'      => $report['themes'],
             'blogs'       => $report['blogs'],
+            'federation'  => $report['federation'],
         ]));
         $this->record(null, 'manutenzione', sprintf(
-            'statistiche: %d, iscrizioni: %d, cache: %d, temi: %d, blog: %d',
+            'statistiche: %d, iscrizioni: %d, cache: %d, temi: %d, blog: %d, federazione: %d',
             $report['hits'],
             $report['subscribers'],
             $report['cache'],
             $report['themes'],
-            $report['blogs']
+            $report['blogs'],
+            $report['federation']
         ));
 
         return $this->redirect(Url::to('/admin'));
@@ -89,7 +92,7 @@ final class DashboardController extends AdminController
     /**
      * Operazioni periodiche, condivise con la riga di comando.
      *
-     * @return array{hits:int,subscribers:int,cache:int,themes:int,blogs:int}
+     * @return array{hits:int,subscribers:int,cache:int,themes:int,blogs:int,federation:int}
      */
     public static function runMaintenance(): array
     {
@@ -99,6 +102,7 @@ final class DashboardController extends AdminController
             'cache'       => Cache::prune(),
             'themes'      => Theme::sync(),
             'blogs'       => self::refreshBlogCounters(),
+            'federation'  => Delivery::processDue(50),
         ];
     }
 

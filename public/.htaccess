@@ -36,6 +36,11 @@ Options -Indexes +FollowSymLinks
     RewriteEngine On
     # RewriteBase /
 
+    # WebFinger e gli altri endpoint ActivityPub: non devono essere
+    # scambiati per file nascosti (la regola FilesMatch sui nomi che
+    # cominciano per punto sta più sotto).
+    RewriteRule ^\.well-known/ index.php [L]
+
     # Prima di tutto il resto: dentro media/ nulla di eseguibile viene
     # servito, qualunque estensione abbia. Vedi anche public/media/.htaccess.
     RewriteRule ^media/.*\.(?i:php|php3|php4|php5|php7|php8|phps|phar|phtml|pht|cgi|pl|py|shtml)$ - [F,L]
@@ -134,7 +139,7 @@ Options -Indexes +FollowSymLinks
 # ---------------------------------------------------------------------------
 <IfModule mod_deflate.c>
     AddOutputFilterByType DEFLATE text/html text/plain text/xml text/css
-    AddOutputFilterByType DEFLATE application/javascript application/json
+    AddOutputFilterByType DEFLATE application/javascript application/json application/activity+json application/ld+json application/jrd+json
     AddOutputFilterByType DEFLATE application/xml application/rss+xml application/atom+xml
     AddOutputFilterByType DEFLATE image/svg+xml
 </IfModule>

@@ -72,6 +72,7 @@ function nb_cli_maintenance(): int
     nb_cli_row('Voci di cache scadute', (string) $report['cache']);
     nb_cli_row('Temi allineati', (string) $report['themes']);
     nb_cli_row('Blog ricalcolati', (string) $report['blogs']);
+    nb_cli_row('Attività federate', (string) $report['federation']);
 
     // Il punteggio della vetrina dipende dall'età dell'articolo: senza un
     // ricalcolo periodico l'ordinamento si cristallizza sul giorno in cui i
@@ -298,6 +299,7 @@ function nb_cli_require_install(): void
     try {
         Database::instance();
         Blog::ensureRoutingColumn();
+        \Noblogs\Federation\Schema::ensure();
     } catch (\Throwable $e) {
         throw new \RuntimeException('Connessione al database non riuscita: ' . $e->getMessage());
     }

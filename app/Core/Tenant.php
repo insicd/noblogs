@@ -180,7 +180,8 @@ final class Tenant
         static $reserved = [
             'accedi', 'esci', 'registrati', 'verifica-email', 'password',
             'dashboard', 'admin', 'esplora', 'informazioni', 'privacy',
-            'termini', 'aiuto', 'assets', 'media', 'install', 'api',
+            'termini', 'aiuto', 'assets', 'media', 'install', 'api', 'ap',
+            'nodeinfo', '.well-known',
             'sitemap.xml', 'robots.txt', 'favicon.ico',
         ];
         return in_array(strtolower($segment), $reserved, true);

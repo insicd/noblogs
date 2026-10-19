@@ -64,6 +64,7 @@ CREATE TABLE IF NOT EXISTS `{{prefix}}blogs` (
   `allow_raw_html`    TINYINT(1) NOT NULL DEFAULT 0,
   `subscriptions_active` TINYINT(1) NOT NULL DEFAULT 0,
   `discoverable`      TINYINT(1) NOT NULL DEFAULT 1,
+  `federation_active` TINYINT(1) NOT NULL DEFAULT 1,
   `reviewed`          TINYINT(1) NOT NULL DEFAULT 0,
   -- 1 = indirizzo pubblico sul terzo livello (nome.dominio). 0 = solo
   -- percorso (dominio/nome). Lo decide l'amministrazione, non l'approvazione.
@@ -266,4 +267,83 @@ CREATE TABLE IF NOT EXISTS `{{prefix}}moderation_log` (
   `created_at`  DATETIME NOT NULL,
   PRIMARY KEY (`id`),
   KEY `ix_modlog_blog` (`blog_id`,`created_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ---------------------------------------------------------------------------
+-- ActivityPub: ogni blog è un actor nome@istanza.
+-- ---------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `{{prefix}}ap_keys` (
+  `blog_id`     INT UNSIGNED NOT NULL,
+  `public_key`  TEXT NOT NULL,
+  `private_key` TEXT NOT NULL,
+  `created_at`  DATETIME NOT NULL,
+  PRIMARY KEY (`blog_id`),
+  CONSTRAINT `fk_ap_keys_blog` FOREIGN KEY (`blog_id`)
+    REFERENCES `{{prefix}}blogs` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `{{prefix}}ap_followers` (
+  `id`               INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `blog_id`          INT UNSIGNED NOT NULL,
+  `actor_id`         VARCHAR(500) NOT NULL,
+  `inbox_url`        VARCHAR(500) NOT NULL,
+  `shared_inbox_url` VARCHAR(500) DEFAULT NULL,
+  `handle`           VARCHAR(191) DEFAULT NULL,
+  `display_name`     VARCHAR(200) DEFAULT NULL,
+  `avatar_url`       VARCHAR(500) DEFAULT NULL,
+  `created_at`       DATETIME NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_ap_followers_actor` (`blog_id`,`actor_id`(191)),
+  KEY `ix_ap_followers_blog` (`blog_id`,`created_at`),
+  CONSTRAINT `fk_ap_followers_blog` FOREIGN KEY (`blog_id`)
+    REFERENCES `{{prefix}}blogs` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `{{prefix}}ap_notifications` (
+  `id`           INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `blog_id`      INT UNSIGNED NOT NULL,
+  `post_id`      INT UNSIGNED DEFAULT NULL,
+  `type`         VARCHAR(32) NOT NULL,
+  `actor_id`     VARCHAR(500) NOT NULL,
+  `handle`       VARCHAR(191) DEFAULT NULL,
+  `display_name` VARCHAR(200) DEFAULT NULL,
+  `avatar_url`   VARCHAR(500) DEFAULT NULL,
+  `content`      MEDIUMTEXT,
+  `activity_id`  VARCHAR(500) DEFAULT NULL,
+  `object_id`    VARCHAR(500) DEFAULT NULL,
+  `is_read`      TINYINT(1) NOT NULL DEFAULT 0,
+  `created_at`   DATETIME NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_ap_notifications_activity` (`blog_id`,`activity_id`(191)),
+  KEY `ix_ap_notifications_blog` (`blog_id`,`is_read`,`created_at`),
+  CONSTRAINT `fk_ap_notifications_blog` FOREIGN KEY (`blog_id`)
+    REFERENCES `{{prefix}}blogs` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `{{prefix}}ap_deliveries` (
+  `id`              BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `blog_id`         INT UNSIGNED NOT NULL,
+  `inbox_url`       VARCHAR(500) NOT NULL,
+  `payload`         MEDIUMTEXT NOT NULL,
+  `attempts`        TINYINT UNSIGNED NOT NULL DEFAULT 0,
+  `last_error`      VARCHAR(300) DEFAULT NULL,
+  `next_attempt_at` DATETIME NOT NULL,
+  `created_at`      DATETIME NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `ix_ap_deliveries_due` (`next_attempt_at`),
+  KEY `ix_ap_deliveries_blog` (`blog_id`),
+  CONSTRAINT `fk_ap_deliveries_blog` FOREIGN KEY (`blog_id`)
+    REFERENCES `{{prefix}}blogs` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `{{prefix}}ap_remote_actors` (
+  `actor_id`         VARCHAR(500) NOT NULL,
+  `inbox_url`        VARCHAR(500) NOT NULL,
+  `shared_inbox_url` VARCHAR(500) DEFAULT NULL,
+  `public_key`       TEXT,
+  `handle`           VARCHAR(191) DEFAULT NULL,
+  `display_name`     VARCHAR(200) DEFAULT NULL,
+  `avatar_url`       VARCHAR(500) DEFAULT NULL,
+  `fetched_at`       DATETIME NOT NULL,
+  PRIMARY KEY (`actor_id`(191))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

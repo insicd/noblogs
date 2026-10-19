@@ -73,7 +73,7 @@ return [
     'admin.maintenance.intro'     => 'Elimina le statistiche oltre il periodo di conservazione, le iscrizioni mai confermate e la cache scaduta; riallinea i temi e ricalcola i contatori dei blog.',
     'admin.maintenance.cron_hint' => 'Le stesse operazioni si possono programmare con «bin/noblogs manutenzione»: se hai accesso al cron, è la strada migliore.',
     'admin.maintenance.run'       => 'Esegui la manutenzione',
-    'admin.maintenance.done'      => 'Manutenzione completata: :hits letture eliminate, :subscribers iscrizioni scadute, :cache voci di cache, :themes temi allineati, :blogs blog ricalcolati.',
+    'admin.maintenance.done'      => 'Manutenzione completata: :hits letture eliminate, :subscribers iscrizioni scadute, :cache voci di cache, :themes temi allineati, :blogs blog ricalcolati, :federation attività federate.',
 
     // ---------------------------------------------------------------------
     // Blog
@@ -266,6 +266,8 @@ return [
     'admin.settings.review_blogs_hint'      => 'I blog nuovi restano fuori dagli indici e dalla vetrina finché un moderatore non li approva. Restano comunque leggibili da chi ne ha l\'indirizzo, di solito via percorso sul dominio principale. Il terzo livello si attiva blog per blog, dopo aver creato il sottodominio.',
     'admin.settings.notify_new_blog'        => 'Avvisa l\'amministrazione quando nasce un blog',
     'admin.settings.notify_new_blog_hint'   => 'Invia una email all\'indirizzo di contatto quando qualcuno crea un blog in attesa di revisione. La coda in amministrazione resta visibile in ogni caso.',
+    'admin.settings.federation'             => 'Federazione ActivityPub',
+    'admin.settings.federation_hint'        => 'Ogni blog approvato è un actor nome@istanza. I post partono verso i follower del fediverso; i commenti arrivano nella dashboard dell\'autore. Si può spegnere anche sul singolo blog.',
 
     'admin.settings.blogs_per_user'      => 'Blog per utente',
     'admin.settings.blogs_per_user_hint' => 'Vale per i nuovi account; il limite di un singolo utente si cambia dalla pagina Utenti.',

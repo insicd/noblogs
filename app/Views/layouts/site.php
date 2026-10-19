@@ -62,6 +62,11 @@ $faviconIsGlyph = $blog->faviconIsGlyph();
 <?php endif; ?>
 
 <link rel="alternate" type="application/atom+xml" title="<?= e($blog->title) ?>" href="<?= e(Url::site('/feed/')) ?>">
+<?php if (\Noblogs\Federation\ActivityPub::blogEnabled($blog)): ?>
+<link rel="alternate" type="application/activity+json" href="<?= e(isset($post) && $post !== null && !$post->is_page
+    ? \Noblogs\Federation\ActivityPub::objectId($blog, $post)
+    : \Noblogs\Federation\ActivityPub::actorId($blog)) ?>">
+<?php endif; ?>
 
 <style><?= $stylesheet ?></style>
 <?= $blog->header_directive ?? '' ?>

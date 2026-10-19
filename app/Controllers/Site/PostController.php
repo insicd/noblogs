@@ -6,6 +6,7 @@ namespace Noblogs\Controllers\Site;
 
 use Noblogs\Core\Response;
 use Noblogs\Core\Url;
+use Noblogs\Federation\ActivityPub;
 use Noblogs\Markdown\Renderer;
 use Noblogs\Models\Post;
 use Noblogs\Models\Redirect;
@@ -39,6 +40,11 @@ final class PostController extends SiteController
                 return $this->redirect(Url::site('/' . $aliased->slug . '/'), 301);
             }
             return $this->notFound();
+        }
+
+        if (ActivityPub::wantsJson($this->request) && ActivityPub::blogEnabled($this->blog)
+            && $post->isVisible() && !$post->is_page) {
+            return ActivityPub::json(ActivityPub::articleDocument($this->blog, $post));
         }
 
         if (!$post->isVisible()) {

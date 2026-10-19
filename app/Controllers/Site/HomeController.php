@@ -6,6 +6,7 @@ namespace Noblogs\Controllers\Site;
 
 use Noblogs\Core\Response;
 use Noblogs\Core\Url;
+use Noblogs\Federation\ActivityPub;
 use Noblogs\Markdown\Renderer;
 use Noblogs\Models\Post;
 
@@ -16,6 +17,13 @@ final class HomeController extends SiteController
 {
     public function index(): Response
     {
+        if (ActivityPub::wantsJson($this->request) && ActivityPub::blogEnabled($this->blog)) {
+            $document = ActivityPub::actorDocument($this->blog);
+            return $document === null
+                ? Response::text('Not found', 503)
+                : ActivityPub::json($document);
+        }
+
         // Una pagina il cui slug è vuoto o "home" ha la precedenza sul
         // contenuto della homepage: serve a chi vuole gestirla come le altre.
         $homePage = Post::findBySlug($this->blog, 'home');

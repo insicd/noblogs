@@ -124,6 +124,13 @@ $this->layout('layouts/dashboard');
       </label>
       <p class="hint"><?= e(__('settings.discoverable_hint')) ?></p>
     </li>
+    <li>
+      <label>
+        <input type="checkbox" name="federation_active" value="1" <?= $flag('federation_active', $blog->federation_active) ? 'checked' : '' ?>>
+        <?= e(__('settings.federation')) ?>
+      </label>
+      <p class="hint"><?= e(__('settings.federation_hint', ['handle' => \Noblogs\Federation\ActivityPub::handle($blog)])) ?></p>
+    </li>
   </ul>
 
   <div class="actions">

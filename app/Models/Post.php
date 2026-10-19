@@ -324,6 +324,20 @@ final class Post extends Model
             'updated_at'         => $this->updated_at,
         ];
 
+        $wasVisible = false;
+        if ($this->exists()) {
+            $previous = self::db()->fetch(
+                'SELECT is_published, hidden, is_page, published_at FROM {{posts}} WHERE id = ?',
+                [$this->id]
+            );
+            if ($previous !== null) {
+                $wasVisible = (bool) (int) $previous['is_published']
+                    && !(bool) (int) $previous['hidden']
+                    && !(bool) (int) $previous['is_page']
+                    && (string) $previous['published_at'] <= self::now();
+            }
+        }
+
         if ($this->exists()) {
             $this->updateRow($data);
         } else {
@@ -334,6 +348,39 @@ final class Post extends Model
         // Un post nuovo o modificato cambia anche gli elenchi generati dalle
         // direttive nelle altre pagine, non solo la propria.
         \Noblogs\Markdown\Cache::flushBlog($this->blog_id);
+
+        $this->federateAfterSave($wasVisible);
+    }
+
+    public function delete(): bool
+    {
+        if ($this->isVisible() && !$this->is_page) {
+            $blog = Blog::find($this->blog_id);
+            if ($blog !== null) {
+                \Noblogs\Federation\Delivery::publish($blog, $this, 'Delete');
+            }
+        }
+        return parent::delete();
+    }
+
+    private function federateAfterSave(bool $wasVisible): void
+    {
+        $nowVisible = $this->isVisible() && !$this->is_page;
+        if (!$nowVisible && !$wasVisible) {
+            return;
+        }
+
+        $blog = Blog::find($this->blog_id);
+        if ($blog === null) {
+            return;
+        }
+
+        $type = match (true) {
+            $nowVisible && !$wasVisible => 'Create',
+            $nowVisible && $wasVisible => 'Update',
+            default => 'Delete',
+        };
+        \Noblogs\Federation\Delivery::publish($blog, $this, $type);
     }
 
     private static function freshUid(): string
