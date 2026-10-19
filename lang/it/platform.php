@@ -57,6 +57,10 @@ return [
     'platform.home.feature.yours.title'   => 'I contenuti restano tuoi',
     'platform.home.feature.yours.body'    => 'Puoi esportare tutto in file Markdown quando vuoi, collegare un dominio tuo e cancellare l\'account con i suoi contenuti in qualsiasi momento.',
 
+    'platform.home.fediverse.title'  => 'Parte del fediverso',
+    'platform.home.fediverse.body'   => 'Ogni blog pubblicato qui ha un indirizzo ActivityPub. Si può seguire da Mastodon, Pixelfed, WriteFreely e dal resto del fediverso: i nuovi articoli arrivano nella timeline di chi segue, i commenti tornano all\'autore.',
+    'platform.home.fediverse.example' => 'Esempio: :handle',
+
     // -----------------------------------------------------------------------
     // Vetrina
     // -----------------------------------------------------------------------

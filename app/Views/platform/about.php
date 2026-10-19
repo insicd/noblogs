@@ -10,6 +10,7 @@
 
 use Noblogs\Core\Config;
 use Noblogs\Core\Url;
+use Noblogs\Federation\ActivityPub;
 
 $siteName = (string) ($siteName ?? Config::get('site.name', 'Noblogs'));
 
@@ -51,6 +52,12 @@ $this->start('content');
         elenchi di articoli dove servono.</li>
     <li><strong>I contenuti restano tuoi.</strong> Puoi esportare tutto in file Markdown, collegare
         un tuo dominio e cancellare l'account con tutto il suo contenuto quando vuoi.</li>
+    <?php if (ActivityPub::instanceEnabled()): ?>
+    <li><strong>Fediverso.</strong> Ogni blog è un actor ActivityPub
+        (<code>nome@<?= e(Url::mainDomain()) ?></code>). Si può seguire da Mastodon, Pixelfed,
+        WriteFreely e dagli altri: i nuovi articoli arrivano a chi segue, i commenti tornano
+        all'autore.</li>
+    <?php endif; ?>
   </ul>
 
   <h2>Registrazione aperta, indicizzazione no</h2>

@@ -11,6 +11,10 @@ return [
     'site.not_found_body'  => 'The page you were looking for does not exist, or it has been moved.',
     'site.back_home'       => 'Back to the homepage',
     'site.pending_review'  => 'Blog awaiting review',
+    'site.fediverse.follow'       => 'Follow on the fediverse',
+    'site.fediverse.handle_label' => 'ActivityPub address',
+    'site.fediverse.copied'       => 'Address copied',
+    'site.fediverse.hint'         => 'Paste it in the search of Mastodon or another fediverse client.',
 
     'blog.all_posts'     => 'All posts',
     'blog.no_posts'      => 'There is nothing to read yet.',

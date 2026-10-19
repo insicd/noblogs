@@ -478,6 +478,57 @@ thead th {
   font-size: 1.125rem;
 }
 
+.pf-fediverse {
+  display: grid;
+  gap: 1.15rem;
+  margin-top: 2rem;
+  padding: 1.35rem 1.4rem 1.25rem;
+  border: 1px solid var(--pf-border);
+  border-radius: calc(var(--pf-radius) * 2);
+  background: var(--pf-surface);
+}
+
+@media (min-width: 40rem) {
+  .pf-fediverse {
+    grid-template-columns: auto 1fr;
+    align-items: start;
+    gap: 1.35rem 1.5rem;
+  }
+}
+
+.pf-fediverse-mark {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  color: var(--pf-accent);
+  background: var(--pf-surface-alt);
+  border-radius: var(--pf-radius);
+}
+
+.pf-fediverse-mark svg {
+  width: 1.45rem;
+  height: 1.45rem;
+}
+
+.pf-fediverse h2 {
+  margin: 0 0 .4rem;
+}
+
+.pf-fediverse p {
+  margin: 0;
+  color: var(--pf-muted);
+  max-width: 46rem;
+}
+
+.pf-fediverse .pf-fediverse-example {
+  margin-top: .85rem;
+  color: var(--pf-text);
+  font-family: var(--pf-mono);
+  font-size: .9375rem;
+}
+
 .pf-more {
   margin-top: 1.5rem;
 }

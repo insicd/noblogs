@@ -13,6 +13,7 @@
 
 use Noblogs\Core\Config;
 use Noblogs\Core\Url;
+use Noblogs\Federation\ActivityPub;
 
 $siteName = (string) ($siteName ?? Config::get('site.name', 'Noblogs'));
 $example = $pathRouting ? $domain . '/ilmioblog/' : 'ilmioblog.' . $domain;
@@ -40,6 +41,9 @@ $this->start('content');
       <li><a href="#file">File e immagini</a></li>
       <li><a href="#esportare">Esportare e importare</a></li>
       <li><a href="#vetrina">Comparire nella vetrina</a></li>
+      <?php if (ActivityPub::instanceEnabled()): ?>
+      <li><a href="#fediverso">Fediverso</a></li>
+      <?php endif; ?>
     </ol>
   </nav>
 
@@ -206,6 +210,21 @@ $this->start('content');
     blog non occupa la pagina. L'ordine predefinito tiene conto degli apprezzamenti e
     dell'anzianità; con «Più recenti» e «A caso» si guarda la stessa raccolta in altri modi.
   </p>
+
+  <?php if (ActivityPub::instanceEnabled()): ?>
+  <h2 id="fediverso">Fediverso</h2>
+  <p>
+    Ogni blog approvato è un actor ActivityPub: <code>nome-blog@<?= e($domain) ?></code>.
+    Si può seguire da Mastodon, Pixelfed, WriteFreely e dagli altri client del fediverso.
+    I nuovi articoli partono verso chi segue; i commenti, gli apprezzamenti e i follow
+    arrivano nella dashboard, alla voce «Notifiche».
+  </p>
+  <p>
+    Nel piè di pagina del blog c'è «Segui sul fediverso»: mostra l'indirizzo e lo copia,
+    pronto da incollare nella ricerca di un client. Si può spegnere dalla voce
+    «Federazione sul fediverso» nelle impostazioni del blog.
+  </p>
+  <?php endif; ?>
 
   <?php if ($contact !== ''): ?>
     <h2>Qualcosa non torna?</h2>

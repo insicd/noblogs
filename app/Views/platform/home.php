@@ -13,6 +13,7 @@
 
 use Noblogs\Core\Config;
 use Noblogs\Core\Url;
+use Noblogs\Federation\ActivityPub;
 
 $loggedIn = (bool) ($loggedIn ?? false);
 $siteName = (string) ($siteName ?? Config::get('site.name', 'Noblogs'));
@@ -74,6 +75,23 @@ $this->start('content');
     <?php endforeach; ?>
   </ul>
 </section>
+
+<?php if (ActivityPub::instanceEnabled()): ?>
+<section class="pf-shell" aria-labelledby="pf-fediverse-title">
+  <div class="pf-fediverse">
+    <div class="pf-fediverse-mark" aria-hidden="true">
+      <?php $this->partial('partials/ap-icon'); ?>
+    </div>
+    <div class="pf-fediverse-text">
+      <h2 id="pf-fediverse-title"><?= e(__('platform.home.fediverse.title')) ?></h2>
+      <p><?= e(__('platform.home.fediverse.body')) ?></p>
+      <p class="pf-fediverse-example"><?= e(__('platform.home.fediverse.example', [
+          'handle' => '@ilmioblog@' . $domain,
+      ])) ?></p>
+    </div>
+  </div>
+</section>
+<?php endif; ?>
 
 <?php if ($entries !== []): ?>
 <section class="pf-recent pf-shell">

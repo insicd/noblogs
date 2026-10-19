@@ -400,8 +400,8 @@ final class ActivityPub
     public static function postFromObjectId(string $url): ?Post
     {
         $parts = parse_url($url);
-        $path = (string) ($parts['path'] ?? '');
-        if (preg_match('#^/ap/([a-z0-9][a-z0-9-]{0,62})/posts/([a-z0-9]+)$#', $path, $m) !== 1) {
+        $path = rtrim((string) ($parts['path'] ?? ''), '/');
+        if (preg_match('#^/ap/([a-z0-9][a-z0-9-]{0,62})/posts/([a-z0-9]+)(?:/[a-z0-9-]+)?$#', $path, $m) !== 1) {
             return self::postFromHtmlUrl($url);
         }
         $blog = Blog::findBySubdomain($m[1]);
@@ -411,16 +411,33 @@ final class ActivityPub
         return Post::findByUid($m[2]);
     }
 
+    public static function blogFromUrl(string $url): ?Blog
+    {
+        $parts = parse_url($url);
+        $path = rtrim((string) ($parts['path'] ?? ''), '/');
+        if (preg_match('#^/ap/([a-z0-9][a-z0-9-]{0,62})(?:/.*)?$#', $path, $m) === 1
+            && !in_array($m[1], ['inbox', 'outbox', 'followers', 'following'], true)
+        ) {
+            $blog = Blog::findBySubdomain($m[1]);
+            if ($blog !== null) {
+                return $blog;
+            }
+        }
+        $post = self::postFromObjectId($url);
+        return $post !== null ? Blog::find($post->blog_id) : null;
+    }
+
     public static function postFromHtmlUrl(string $url): ?Post
     {
         $parts = parse_url($url);
         $host = strtolower((string) ($parts['host'] ?? ''));
         $path = trim((string) ($parts['path'] ?? ''), '/');
         $main = strtolower(Url::mainDomain());
+        $extra = array_map('strtolower', (array) Config::get('site.extra_hosts', []));
 
         $blog = null;
         $slug = $path;
-        if ($host === $main || $host === 'www.' . $main) {
+        if ($host === $main || $host === 'www.' . $main || in_array($host, $extra, true)) {
             $segments = $path === '' ? [] : explode('/', $path);
             $first = $segments[0] ?? '';
             if ($first !== '' && !\Noblogs\Core\Tenant::isReservedSegment($first)) {

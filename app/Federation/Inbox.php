@@ -36,7 +36,7 @@ final class Inbox
             return 400;
         }
 
-        $type = (string) ($payload['type'] ?? '');
+        $type = self::typeOf($payload['type'] ?? null);
         $actorId = self::idOf($payload['actor'] ?? null);
         if ($actorId === '' || $type === '') {
             return 400;
@@ -53,6 +53,12 @@ final class Inbox
 
         if ($blog === null) {
             $blog = self::blogFromPayload($payload);
+        }
+        if ($blog === null && in_array($type, ['Create', 'Update'], true)) {
+            $fetched = self::embeddedObject($payload['object'] ?? null);
+            if (is_array($fetched)) {
+                $blog = self::blogFromPayload(['object' => $fetched] + $payload);
+            }
         }
         if ($blog === null || !ActivityPub::blogEnabled($blog)) {
             return 404;
@@ -115,7 +121,7 @@ final class Inbox
     private static function undo(Blog $blog, array $payload, array $remote): int
     {
         $inner = $payload['object'] ?? null;
-        $innerType = is_array($inner) ? (string) ($inner['type'] ?? '') : '';
+        $innerType = is_array($inner) ? self::typeOf($inner['type'] ?? null) : '';
         $actorId = (string) $remote['actor_id'];
 
         if ($innerType === 'Follow' || (!is_array($inner) && $inner === ActivityPub::actorId($blog))) {
@@ -156,25 +162,21 @@ final class Inbox
      */
     private static function create(Blog $blog, array $payload, array $remote): int
     {
-        $object = $payload['object'] ?? null;
-        if (!is_array($object)) {
+        $object = self::embeddedObject($payload['object'] ?? null);
+        if ($object === null) {
             return 202;
         }
-        $objectType = (string) ($object['type'] ?? '');
+        $objectType = self::typeOf($object['type'] ?? null);
         if (!in_array($objectType, ['Note', 'Article', 'Comment'], true)) {
             return 202;
         }
 
-        $replyTo = self::idOf($object['inReplyTo'] ?? null);
-        if ($replyTo === '') {
-            return 202;
-        }
-        $post = ActivityPub::postFromObjectId($replyTo);
+        $post = self::postFromReply($object) ?? self::postFromReply($payload);
         if ($post === null || $post->blog_id !== $blog->id) {
             return 202;
         }
 
-        $html = (string) ($object['content'] ?? '');
+        $html = self::objectContent($object);
         $html = (new Sanitizer())->clean($html);
         $text = Str::plain(strip_tags($html));
 
@@ -185,7 +187,7 @@ final class Inbox
             'handle'       => $remote['handle'],
             'display_name' => $remote['display_name'],
             'avatar_url'   => $remote['avatar_url'],
-            'content'      => Str::limit($text !== '' ? $text : $html, 2000, ''),
+            'content'      => Str::limit($text !== '' ? $text : strip_tags($html), 2000, ''),
             'activity_id'  => self::idOf($payload['id'] ?? $object['id'] ?? null) ?: null,
             'object_id'    => self::idOf($object['id'] ?? null) ?: null,
         ]);
@@ -237,23 +239,141 @@ final class Inbox
      */
     private static function blogFromPayload(array $payload): ?Blog
     {
-        foreach (['object', 'target'] as $key) {
-            $id = self::idOf($payload[$key] ?? null);
-            if ($id === '') {
-                continue;
+        foreach (self::addressedUrls($payload) as $url) {
+            $blog = ActivityPub::blogFromUrl($url);
+            if ($blog !== null) {
+                return $blog;
             }
-            if (preg_match('#/ap/([a-z0-9][a-z0-9-]{0,62})(?:/|$)#', (string) parse_url($id, PHP_URL_PATH), $m) === 1) {
-                $blog = Blog::findBySubdomain($m[1]);
-                if ($blog !== null) {
-                    return $blog;
-                }
-            }
-            $post = ActivityPub::postFromObjectId($id);
+            $post = ActivityPub::postFromObjectId($url);
             if ($post !== null) {
                 return Blog::find($post->blog_id);
             }
         }
         return null;
+    }
+
+    /**
+     * URL della nostra parte: actor, post, inReplyTo, menzioni, destinatari.
+     * Serve alla shared inbox: un Create di commento ha come object la Note
+     * remota, e il blog sta in inReplyTo, non nell'id dell'oggetto.
+     *
+     * @param array<string,mixed> $payload
+     * @return list<string>
+     */
+    private static function addressedUrls(array $payload): array
+    {
+        $urls = [];
+        $push = static function (mixed $value) use (&$urls): void {
+            foreach (self::idsOf($value) as $id) {
+                $urls[] = $id;
+            }
+            if (!is_array($value)) {
+                return;
+            }
+            if (array_is_list($value) && !isset($value['id']) && !isset($value['@id'])) {
+                foreach ($value as $item) {
+                    if (is_array($item)) {
+                        foreach (['inReplyTo', 'inReplyToAtomUri', 'href', 'url'] as $key) {
+                            foreach (self::idsOf($item[$key] ?? null) as $inner) {
+                                $urls[] = $inner;
+                            }
+                        }
+                    }
+                }
+                return;
+            }
+            foreach (['inReplyTo', 'inReplyToAtomUri', 'href', 'url'] as $key) {
+                foreach (self::idsOf($value[$key] ?? null) as $inner) {
+                    $urls[] = $inner;
+                }
+            }
+            if (isset($value['tag']) && is_array($value['tag'])) {
+                foreach ($value['tag'] as $tag) {
+                    foreach (self::idsOf(is_array($tag) ? ($tag['href'] ?? $tag) : $tag) as $href) {
+                        $urls[] = $href;
+                    }
+                }
+            }
+        };
+
+        foreach (['object', 'target', 'to', 'cc', 'bto', 'bcc', 'audience', 'inReplyTo', 'inReplyToAtomUri', 'tag'] as $key) {
+            $push($payload[$key] ?? null);
+        }
+
+        return array_values(array_unique($urls));
+    }
+
+    /**
+     * @param array<string,mixed> $object
+     */
+    private static function postFromReply(array $object): ?Post
+    {
+        foreach (['inReplyTo', 'inReplyToAtomUri'] as $key) {
+            foreach (self::idsOf($object[$key] ?? null) as $url) {
+                $post = ActivityPub::postFromObjectId($url);
+                if ($post !== null) {
+                    return $post;
+                }
+            }
+        }
+        return null;
+    }
+
+    /**
+     * @return array<string,mixed>|null
+     */
+    private static function embeddedObject(mixed $object): ?array
+    {
+        if (is_array($object) && (isset($object['type']) || isset($object['content']) || isset($object['inReplyTo']))) {
+            return $object;
+        }
+        $url = self::idOf($object);
+        if ($url === '' || !Http::isSafeUrl($url)) {
+            return null;
+        }
+        $fetched = Http::getJson($url);
+        return is_array($fetched) ? $fetched : null;
+    }
+
+    /** @param array<string,mixed> $object */
+    private static function objectContent(array $object): string
+    {
+        $html = (string) ($object['content'] ?? '');
+        if ($html !== '') {
+            return $html;
+        }
+        $map = $object['contentMap'] ?? null;
+        if (is_array($map)) {
+            foreach ($map as $value) {
+                if (is_string($value) && $value !== '') {
+                    return $value;
+                }
+            }
+        }
+        return (string) ($object['summary'] ?? '');
+    }
+
+    private static function typeOf(mixed $value): string
+    {
+        if (is_array($value)) {
+            foreach ($value as $item) {
+                if (is_string($item) && $item !== '') {
+                    $value = $item;
+                    break;
+                }
+            }
+        }
+        if (!is_string($value) || $value === '') {
+            return '';
+        }
+        $value = trim($value);
+        if (str_contains($value, '#')) {
+            return substr($value, (int) strrpos($value, '#') + 1);
+        }
+        if (str_contains($value, '/')) {
+            return substr($value, (int) strrpos($value, '/') + 1);
+        }
+        return $value;
     }
 
     /**
@@ -385,17 +505,35 @@ final class Inbox
 
     private static function idOf(mixed $value): string
     {
+        $ids = self::idsOf($value);
+        return $ids[0] ?? '';
+    }
+
+    /** @return list<string> */
+    private static function idsOf(mixed $value): array
+    {
         if (is_string($value)) {
-            return trim($value);
+            $value = trim($value);
+            return $value !== '' ? [$value] : [];
         }
-        if (is_array($value)) {
-            if (isset($value['id']) && is_string($value['id'])) {
-                return trim($value['id']);
-            }
-            if (array_is_list($value) && isset($value[0])) {
-                return self::idOf($value[0]);
-            }
+        if (!is_array($value)) {
+            return [];
         }
-        return '';
+        if (isset($value['id']) && is_string($value['id']) && trim($value['id']) !== '') {
+            return [trim($value['id'])];
+        }
+        if (isset($value['@id']) && is_string($value['@id']) && trim($value['@id']) !== '') {
+            return [trim($value['@id'])];
+        }
+        if (array_is_list($value)) {
+            $ids = [];
+            foreach ($value as $item) {
+                foreach (self::idsOf($item) as $id) {
+                    $ids[] = $id;
+                }
+            }
+            return $ids;
+        }
+        return [];
     }
 }

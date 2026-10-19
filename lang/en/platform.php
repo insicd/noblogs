@@ -56,6 +56,10 @@ return [
     'platform.home.feature.yours.title'   => 'Your content stays yours',
     'platform.home.feature.yours.body'    => 'Export everything as Markdown files whenever you want, point your own domain at the blog, and delete the account and its content at any time.',
 
+    'platform.home.fediverse.title'   => 'Part of the fediverse',
+    'platform.home.fediverse.body'    => 'Every blog published here gets an ActivityPub address. It can be followed from Mastodon, Pixelfed, WriteFreely and the rest of the fediverse: new posts land in followers’ timelines, replies come back to the author.',
+    'platform.home.fediverse.example' => 'Example: :handle',
+
     // -----------------------------------------------------------------------
     // Showcase
     // -----------------------------------------------------------------------

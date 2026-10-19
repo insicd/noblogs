@@ -11,6 +11,10 @@ return [
     'site.not_found_body'  => 'La pagina che cercavi non esiste, oppure è stata spostata.',
     'site.back_home'       => 'Torna alla home',
     'site.pending_review'  => 'Blog in attesa di revisione',
+    'site.fediverse.follow'       => 'Segui sul fediverso',
+    'site.fediverse.handle_label' => 'Indirizzo ActivityPub',
+    'site.fediverse.copied'       => 'Indirizzo copiato',
+    'site.fediverse.hint'         => 'Incollalo nella ricerca di Mastodon o di un altro client del fediverso.',
 
     'blog.all_posts'     => 'Tutti gli articoli',
     'blog.no_posts'      => 'Non c\'è ancora nulla da leggere.',

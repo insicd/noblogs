@@ -26,6 +26,8 @@ use Noblogs\Support\Str;
 
 $lang = $lang ?? $blog->displayLang();
 $faviconIsGlyph = $blog->faviconIsGlyph();
+$federated = \Noblogs\Federation\ActivityPub::blogEnabled($blog);
+$apHandle = $federated ? '@' . \Noblogs\Federation\ActivityPub::handle($blog) : '';
 ?>
 <!doctype html>
 <html lang="<?= e($lang) ?>">
@@ -62,13 +64,44 @@ $faviconIsGlyph = $blog->faviconIsGlyph();
 <?php endif; ?>
 
 <link rel="alternate" type="application/atom+xml" title="<?= e($blog->title) ?>" href="<?= e(Url::site('/feed/')) ?>">
-<?php if (\Noblogs\Federation\ActivityPub::blogEnabled($blog)): ?>
+<?php if ($federated): ?>
 <link rel="alternate" type="application/activity+json" href="<?= e(isset($post) && $post !== null && !$post->is_page
     ? \Noblogs\Federation\ActivityPub::objectId($blog, $post)
     : \Noblogs\Federation\ActivityPub::actorId($blog)) ?>">
 <?php endif; ?>
 
 <style><?= $stylesheet ?></style>
+<?php if ($federated): ?>
+<style>
+.ap-follow { position: relative; display: inline-block; }
+.ap-follow-btn {
+  display: inline-flex; align-items: center; gap: 0.35em;
+  margin: 0; padding: 0; font: inherit; font-size: inherit;
+  color: inherit; background: none; border: 0; cursor: pointer;
+  text-decoration: underline; text-underline-offset: 0.15em;
+}
+.ap-follow-btn:hover { color: var(--color-link); }
+.ap-follow-icon { width: 1.05em; height: 1.05em; flex: 0 0 auto; }
+.ap-follow-panel {
+  position: absolute; bottom: calc(100% + 0.55rem); left: 0; z-index: 8;
+  width: max-content; max-width: min(22rem, calc(100vw - 2rem));
+  padding: 0.7rem 0.85rem; text-align: left;
+  color: var(--color-text); background: var(--color-bg);
+  border: 1px solid var(--color-border); border-radius: 6px;
+  box-shadow: 0 0.35rem 1.1rem rgba(0, 0, 0, 0.12);
+}
+.ap-follow-label {
+  margin: 0 0 0.3rem; color: var(--color-muted);
+  font-size: 0.8rem; letter-spacing: 0.02em;
+}
+.ap-follow-handle {
+  display: block; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.95rem; user-select: all; word-break: break-all;
+}
+.ap-follow-status { display: block; margin: 0.4rem 0 0; color: var(--color-accent); }
+.ap-follow-hint { display: block; margin: 0.35rem 0 0; color: var(--color-muted); font-size: 0.85rem; }
+</style>
+<?php endif; ?>
 <?= $blog->header_directive ?? '' ?>
 </head>
 <body class="<?= e($bodyClass) ?>">
@@ -89,7 +122,26 @@ $faviconIsGlyph = $blog->faviconIsGlyph();
     <?php if (!$blog->isIndexable()): ?>
       <span class="site-notice"><?= e(__('site.pending_review')) ?></span> ·
     <?php endif; ?>
-    <a href="<?= e(Url::site('/feed/')) ?>">RSS</a> ·
+    <a href="<?= e(Url::site('/feed/')) ?>">RSS</a><?php if ($federated): ?> ·
+    <span class="ap-follow">
+      <button type="button" class="ap-follow-btn"
+              aria-expanded="false" aria-controls="ap-follow-panel"
+              aria-haspopup="dialog"
+              data-handle="<?= e($apHandle) ?>"
+              data-copied="<?= e(__('site.fediverse.copied')) ?>">
+        <?php $this->partial('partials/ap-icon', ['class' => 'ap-follow-icon']); ?>
+        <?= e(__('site.fediverse.follow')) ?>
+      </button>
+      <span id="ap-follow-panel" class="ap-follow-panel" hidden role="dialog"
+            aria-label="<?= e(__('site.fediverse.handle_label')) ?>">
+        <span class="ap-follow-label"><?= e(__('site.fediverse.handle_label')) ?></span>
+        <code class="ap-follow-handle"><?= e($apHandle) ?></code>
+        <span class="ap-follow-status" hidden></span>
+        <span class="ap-follow-hint"><?= e(__('site.fediverse.hint')) ?></span>
+      </span>
+    </span>
+    <noscript> · <code><?= e($apHandle) ?></code></noscript>
+    <?php endif; ?> ·
     <a href="<?= e(Url::platform('/')) ?>"><?= e(Config::get('site.name', 'Noblogs')) ?></a>
   </p>
 </footer>
@@ -205,6 +257,9 @@ $js = static function (string $file): string {
 </script>
 <?php endif; ?>
 <script src="<?= e($js('dates.js')) ?>" defer></script>
+<?php if ($federated): ?>
+<script src="<?= e($js('fediverse.js')) ?>" defer></script>
+<?php endif; ?>
 <?= $blog->footer_directive ?? '' ?>
 </body>
 </html>
