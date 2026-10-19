@@ -81,7 +81,7 @@ $apHandle = $federated ? '@' . \Noblogs\Federation\ActivityPub::handle($blog) : 
   text-decoration: underline; text-underline-offset: 0.15em;
 }
 .ap-follow-btn:hover { color: var(--color-link); }
-.ap-follow-icon { width: 1.05em; height: 1.05em; flex: 0 0 auto; }
+.ap-follow-icon { display: block; width: 1.15em; height: 1.15em; flex: 0 0 auto; }
 .ap-follow-panel {
   position: absolute; bottom: calc(100% + 0.55rem); left: 0; z-index: 8;
   width: max-content; max-width: min(22rem, calc(100vw - 2rem));

@@ -502,14 +502,14 @@ thead th {
   justify-content: center;
   width: 2.75rem;
   height: 2.75rem;
-  color: var(--pf-accent);
   background: var(--pf-surface-alt);
   border-radius: var(--pf-radius);
 }
 
-.pf-fediverse-mark svg {
-  width: 1.45rem;
-  height: 1.45rem;
+.pf-fediverse-mark .ap-icon {
+  display: block;
+  width: 1.7rem;
+  height: 1.7rem;
 }
 
 .pf-fediverse h2 {
