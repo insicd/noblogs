@@ -14,14 +14,16 @@ final class ApNotification extends Model
     protected static string $table = 'ap_notifications';
 
     protected static array $casts = [
-        'id'      => 'int',
-        'blog_id' => 'int',
-        'post_id' => 'int',
-        'is_read' => 'bool',
+        'id'        => 'int',
+        'blog_id'   => 'int',
+        'post_id'   => 'int',
+        'parent_id' => 'int',
+        'is_read'   => 'bool',
     ];
 
     public int $blog_id = 0;
     public ?int $post_id = null;
+    public ?int $parent_id = null;
     public string $type = '';
     public string $actor_id = '';
     public ?string $handle = null;
@@ -47,9 +49,9 @@ final class ApNotification extends Model
     {
         Schema::ensure();
         return self::hydrateAll(self::db()->fetchAll(
-            'SELECT * FROM {{ap_notifications}} WHERE blog_id = ?
+            'SELECT * FROM {{ap_notifications}} WHERE blog_id = ? AND type <> ?
              ORDER BY created_at DESC LIMIT ' . (int) $limit,
-            [$blog->id]
+            [$blog->id, 'reply']
         ));
     }
 
@@ -74,6 +76,7 @@ final class ApNotification extends Model
             self::db()->insert('ap_notifications', [
                 'blog_id'      => $blog->id,
                 'post_id'      => $data['post_id'] ?? null,
+                'parent_id'    => $data['parent_id'] ?? null,
                 'type'         => (string) ($data['type'] ?? 'notice'),
                 'actor_id'     => (string) ($data['actor_id'] ?? ''),
                 'handle'       => $data['handle'] ?? null,
@@ -82,12 +85,60 @@ final class ApNotification extends Model
                 'content'      => $data['content'] ?? null,
                 'activity_id'  => $activityId !== '' ? $activityId : null,
                 'object_id'    => $data['object_id'] ?? null,
-                'is_read'      => 0,
+                'is_read'      => !empty($data['is_read']) ? 1 : 0,
                 'created_at'   => self::now(),
             ]);
         } catch (\Throwable) {
             // Duplicato sulla chiave unica: un retry del remoto, si ignora.
         }
+    }
+
+    /** @return list<self> */
+    public static function comments(Blog $blog, int $limit = 80): array
+    {
+        Schema::ensure();
+        return self::hydrateAll(self::db()->fetchAll(
+            'SELECT * FROM {{ap_notifications}}
+             WHERE blog_id = ? AND type = ?
+             ORDER BY created_at DESC LIMIT ' . (int) $limit,
+            [$blog->id, 'comment']
+        ));
+    }
+
+    /**
+     * Risposte dell'autore, raggruppate per commento di origine.
+     *
+     * @return array<int,list<self>>
+     */
+    public static function repliesGrouped(Blog $blog): array
+    {
+        Schema::ensure();
+        $rows = self::hydrateAll(self::db()->fetchAll(
+            'SELECT * FROM {{ap_notifications}}
+             WHERE blog_id = ? AND type = ? AND parent_id IS NOT NULL
+             ORDER BY created_at ASC',
+            [$blog->id, 'reply']
+        ));
+        $grouped = [];
+        foreach ($rows as $row) {
+            if ($row->parent_id === null) {
+                continue;
+            }
+            $grouped[$row->parent_id][] = $row;
+        }
+        return $grouped;
+    }
+
+    public static function findByObject(Blog $blog, string $objectId): ?self
+    {
+        Schema::ensure();
+        if ($objectId === '') {
+            return null;
+        }
+        return self::hydrateOrNull(self::db()->fetch(
+            'SELECT * FROM {{ap_notifications}} WHERE blog_id = ? AND object_id = ?',
+            [$blog->id, $objectId]
+        ));
     }
 
     public static function markAllRead(Blog $blog): void

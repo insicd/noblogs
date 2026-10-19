@@ -217,7 +217,8 @@ $this->start('content');
     Ogni blog approvato è un actor ActivityPub: <code>nome-blog@<?= e($domain) ?></code>.
     Si può seguire da Mastodon, Pixelfed, WriteFreely e dagli altri client del fediverso.
     I nuovi articoli partono verso chi segue; i commenti, gli apprezzamenti e i follow
-    arrivano nella dashboard, alla voce «Notifiche».
+    arrivano nella dashboard, alla voce «Notifiche». I commenti si possono anche
+    rileggere e a essi si può rispondere dalla voce «Fediverso».
   </p>
   <p>
     Nel piè di pagina del blog c'è «Segui sul fediverso»: mostra l'indirizzo e lo copia,

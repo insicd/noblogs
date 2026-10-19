@@ -17,6 +17,7 @@ $sections = [
     'posts'         => ['/articoli', __('dashboard.nav.posts')],
     'pages'         => ['/pagine', __('dashboard.nav.pages')],
     'notifications' => ['/notifiche', __('dashboard.nav.notifications')],
+    'fediverse'     => ['/fediverso', __('dashboard.nav.fediverse')],
     'theme'         => ['/aspetto', __('dashboard.nav.theme')],
     'nav'           => ['/navigazione', __('dashboard.nav.nav')],
     'analytics'     => ['/statistiche', __('dashboard.nav.analytics')],

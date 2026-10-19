@@ -107,7 +107,7 @@ final class Inbox
         ];
         $inbox = (string) ($remote['inbox_url'] ?? '');
         if ($inbox !== '') {
-            Delivery::enqueue($blog, $accept);
+            Delivery::enqueueTo($blog, $accept, [$inbox]);
             Delivery::processDue(2);
         }
 

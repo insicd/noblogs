@@ -43,20 +43,33 @@ final class Delivery
     /** @param array<string,mixed> $activity */
     public static function enqueue(Blog $blog, array $activity, ?string $notBefore = null): void
     {
+        self::enqueueTo($blog, $activity, ApFollower::inboxes($blog), $notBefore);
+    }
+
+    /**
+     * Accoda la stessa attività verso un elenco esplicito di inbox.
+     *
+     * @param array<string,mixed> $activity
+     * @param list<string> $inboxes
+     */
+    public static function enqueueTo(Blog $blog, array $activity, array $inboxes, ?string $notBefore = null): void
+    {
         Schema::ensure();
         $payload = json_encode($activity, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
-        if (!is_string($payload)) {
+        if (!is_string($payload) || $payload === '') {
             return;
         }
 
         $when = $notBefore ?? gmdate('Y-m-d H:i:s');
         $now = gmdate('Y-m-d H:i:s');
         $db = Database::instance();
+        $seen = [];
 
-        foreach (ApFollower::inboxes($blog) as $inbox) {
-            if (!Http::isSafeUrl($inbox)) {
+        foreach ($inboxes as $inbox) {
+            if (!is_string($inbox) || $inbox === '' || isset($seen[$inbox]) || !Http::isSafeUrl($inbox)) {
                 continue;
             }
+            $seen[$inbox] = true;
             $db->insert('ap_deliveries', [
                 'blog_id'         => $blog->id,
                 'inbox_url'       => $inbox,

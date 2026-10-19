@@ -116,6 +116,7 @@ function registerPlatformRoutes(Router $router): void
     $router->get('/ap/{blog}/followers', [Federation\ActorController::class, 'followers']);
     $router->get('/ap/{blog}/following', [Federation\ActorController::class, 'following']);
     $router->get('/ap/{blog}/posts/{uid}', [Federation\ActorController::class, 'post']);
+    $router->get('/ap/{blog}/replies/{uid}', [Federation\ActorController::class, 'reply']);
     $router->post('/ap/{blog}/inbox', [Federation\ActorController::class, 'inbox']);
 
     // Accesso
@@ -158,6 +159,8 @@ function registerPlatformRoutes(Router $router): void
     $router->any('/dashboard/{blog}/iscritti', [Dashboard\SubscriberController::class, 'index']);
     $router->get('/dashboard/{blog}/notifiche', [Dashboard\NotificationController::class, 'index']);
     $router->post('/dashboard/{blog}/notifiche/lette', [Dashboard\NotificationController::class, 'markRead']);
+    $router->get('/dashboard/{blog}/fediverso', [Dashboard\FederationController::class, 'index']);
+    $router->post('/dashboard/{blog}/fediverso/{id}/rispondi', [Dashboard\FederationController::class, 'reply']);
     $router->get('/dashboard/{blog}/esporta', [Dashboard\ImportExportController::class, 'export']);
     $router->any('/dashboard/{blog}/importa', [Dashboard\ImportExportController::class, 'import']);
 

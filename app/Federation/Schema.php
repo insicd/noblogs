@@ -24,6 +24,7 @@ final class Schema
 
         self::ensureFederationColumn($db);
         self::ensureTables($db);
+        self::ensureNotificationParent($db);
     }
 
     private static function ensureFederationColumn(Database $db): void
@@ -79,6 +80,7 @@ final class Schema
               `id`           INT UNSIGNED NOT NULL AUTO_INCREMENT,
               `blog_id`      INT UNSIGNED NOT NULL,
               `post_id`      INT UNSIGNED DEFAULT NULL,
+              `parent_id`    INT UNSIGNED DEFAULT NULL,
               `type`         VARCHAR(32) NOT NULL,
               `actor_id`     VARCHAR(500) NOT NULL,
               `handle`       VARCHAR(191) DEFAULT NULL,
@@ -92,6 +94,8 @@ final class Schema
               PRIMARY KEY (`id`),
               UNIQUE KEY `uq_ap_notifications_activity` (`blog_id`,`activity_id`(191)),
               KEY `ix_ap_notifications_blog` (`blog_id`,`is_read`,`created_at`),
+              KEY `ix_ap_notifications_parent` (`blog_id`,`parent_id`),
+              KEY `ix_ap_notifications_type` (`blog_id`,`type`,`created_at`),
               CONSTRAINT `fk_ap_notifications_blog` FOREIGN KEY (`blog_id`)
                 REFERENCES `{$prefix}blogs` (`id`) ON DELETE CASCADE
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
@@ -129,6 +133,33 @@ final class Schema
             if (!$db->tableExists($table)) {
                 $db->pdo()->exec($sql);
             }
+        }
+    }
+
+    private static function ensureNotificationParent(Database $db): void
+    {
+        if (!$db->tableExists('ap_notifications') || $db->columnExists('ap_notifications', 'parent_id')) {
+            return;
+        }
+
+        try {
+            $db->query(
+                'ALTER TABLE {{ap_notifications}}
+                 ADD COLUMN `parent_id` INT UNSIGNED DEFAULT NULL AFTER `post_id`'
+            );
+        } catch (\Throwable $e) {
+            if (!$db->columnExists('ap_notifications', 'parent_id')) {
+                throw $e;
+            }
+        }
+
+        try {
+            $db->query(
+                'ALTER TABLE {{ap_notifications}}
+                 ADD KEY `ix_ap_notifications_parent` (`blog_id`,`parent_id`)'
+            );
+        } catch (\Throwable) {
+            // L'indice c'è già, o il motore non lo accetta: si va avanti.
         }
     }
 }

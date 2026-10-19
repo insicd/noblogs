@@ -118,6 +118,7 @@ $this->layout('layouts/dashboard');
 <section class="panel">
   <h2><?= e(__('dashboard.shortcuts')) ?></h2>
   <ul class="link-grid">
+    <li><a href="<?= e(Url::to($base . '/fediverso')) ?>"><?= e(__('dashboard.nav.fediverse')) ?></a></li>
     <li><a href="<?= e(Url::to($base . '/contenuto')) ?>"><?= e(__('dashboard.nav.content')) ?></a></li>
     <li><a href="<?= e(Url::to($base . '/aspetto')) ?>"><?= e(__('dashboard.nav.theme')) ?></a></li>
     <li><a href="<?= e(Url::to($base . '/navigazione')) ?>"><?= e(__('dashboard.nav.nav')) ?></a></li>

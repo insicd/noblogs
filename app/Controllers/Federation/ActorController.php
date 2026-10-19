@@ -8,6 +8,7 @@ use Noblogs\Core\Controller;
 use Noblogs\Core\Response;
 use Noblogs\Federation\ActivityPub;
 use Noblogs\Federation\Inbox;
+use Noblogs\Federation\Reply;
 use Noblogs\Models\Post;
 
 /**
@@ -68,6 +69,19 @@ final class ActorController extends Controller
             return Response::text('Not found', 404);
         }
         return ActivityPub::json(ActivityPub::articleDocument($found, $post))->cachePublic(60);
+    }
+
+    public function reply(string $blog, string $uid): Response
+    {
+        $found = ActivityPub::blogFromPath($blog);
+        if ($found === null) {
+            return Response::text('Not found', 404);
+        }
+        $document = Reply::document($found, $uid);
+        if ($document === null) {
+            return Response::text('Not found', 404);
+        }
+        return ActivityPub::json($document)->cachePublic(60);
     }
 
     public function inbox(string $blog): Response

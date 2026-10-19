@@ -109,6 +109,11 @@ final class ActivityPub
         return self::actorId($blog) . '/posts/' . $post->uid;
     }
 
+    public static function replyId(Blog $blog, string $uid): string
+    {
+        return self::actorId($blog) . '/replies/' . $uid;
+    }
+
     public static function activityId(Blog $blog, Post $post, string $type): string
     {
         return self::objectId($blog, $post) . '/' . strtolower($type);

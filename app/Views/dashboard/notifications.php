@@ -118,6 +118,9 @@ $this->layout('layouts/dashboard');
                       'who'   => $item->actorLabel(),
                       'title' => $post !== null ? $post->title : __('federation.a_post'),
                   ]),
+                  'reply'     => __('federation.event.reply', [
+                      'title' => $post !== null ? $post->title : __('federation.a_post'),
+                  ]),
                   'like'      => __('federation.event.like', [
                       'who'   => $item->actorLabel(),
                       'title' => $post !== null ? $post->title : __('federation.a_post'),
@@ -139,6 +142,9 @@ $this->layout('layouts/dashboard');
                 · <a href="<?= e(Url::post($blog, $post->slug)) ?>" rel="noopener"><?= e($post->title) ?></a>
               <?php endif; ?>
               · <a href="<?= e($item->actor_id) ?>" rel="noopener noreferrer"><?= e(__('federation.open_profile')) ?></a>
+              <?php if ($item->type === 'comment'): ?>
+                · <a href="<?= e(Url::to($base . '/fediverso#commento-' . $item->id)) ?>"><?= e(__('federation.reply.open')) ?></a>
+              <?php endif; ?>
             </div>
             <?php if (!$item->is_read): ?>
               <form method="post" action="<?= e(Url::to($base . '/notifiche/lette')) ?>" class="fed-mark-one">
