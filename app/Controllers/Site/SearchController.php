@@ -58,7 +58,9 @@ final class SearchController extends SiteController
         $params = ['blog_id' => $this->blog->id];
 
         foreach (array_values($terms) as $index => $term) {
-            $conditions[] = "(title LIKE :term$index OR content LIKE :term$index OR tags LIKE :term$index)";
+            // Un solo segnaposto per termine: le prepared statement native di
+            // MySQL accettano ogni nome una sola volta per query.
+            $conditions[] = "CONCAT_WS(' ', title, content, tags) LIKE :term$index";
             $params["term$index"] = '%' . self::escapeLike($term) . '%';
         }
 
