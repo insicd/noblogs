@@ -23,12 +23,32 @@ final class Http
     /**
      * @return array<string,mixed>|null
      */
-    public static function getJson(string $url): ?array
+    public static function getJson(string $url, ?Blog $signer = null): ?array
     {
-        $response = self::request('GET', $url, '', [
+        $headers = [
             'Accept'     => 'application/activity+json, application/ld+json; profile="https://www.w3.org/ns/activitystreams", application/json',
             'User-Agent' => self::userAgent(),
-        ]);
+        ];
+        if ($signer !== null) {
+            $parts = parse_url($url);
+            $host = strtolower((string) ($parts['host'] ?? ''));
+            $path = (string) ($parts['path'] ?? '/');
+            if ($path === '') {
+                $path = '/';
+            }
+            if (isset($parts['query']) && $parts['query'] !== '') {
+                $path .= '?' . $parts['query'];
+            }
+            $port = isset($parts['port']) ? (int) $parts['port'] : 443;
+            $headers['Host'] = $host . ($port !== 443 ? ':' . $port : '');
+            $headers['Date'] = gmdate('D, d M Y H:i:s') . ' GMT';
+            $signature = self::sign($signer, 'get', $path, $headers);
+            if ($signature !== null) {
+                $headers['Signature'] = $signature;
+            }
+        }
+
+        $response = self::request('GET', $url, '', $headers);
         if ($response === null || $response['status'] < 200 || $response['status'] >= 300) {
             return null;
         }
@@ -105,22 +125,67 @@ final class Http
         }
 
         $names = preg_split('/\s+/', trim($params['headers'] ?? '(created)')) ?: [];
+        $hosts = array_values(array_unique(array_filter([
+            $request->hostHeader(),
+            $request->host,
+        ])));
+
+        foreach ($request->signatureTargets() as $target) {
+            foreach ($hosts as $host) {
+                if (self::verifySignedString($request, $names, $params, $publicKeyPem, $target, $host)) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * @param list<string> $names
+     * @param array<string,string> $params
+     */
+    private static function verifySignedString(
+        Request $request,
+        array $names,
+        array $params,
+        string $publicKeyPem,
+        string $target,
+        string $host
+    ): bool {
         $lines = [];
         foreach ($names as $name) {
-            $name = strtolower($name);
+            $name = strtolower(trim($name));
+            if ($name === '') {
+                continue;
+            }
             if ($name === '(request-target)') {
-                $lines[] = '(request-target): ' . $request->signatureTarget();
+                $lines[] = '(request-target): ' . $target;
+                continue;
+            }
+            if ($name === '(created)') {
+                $created = $params['created'] ?? '';
+                if ($created === '') {
+                    return false;
+                }
+                $lines[] = '(created): ' . $created;
+                continue;
+            }
+            if ($name === '(expires)') {
+                $expires = $params['expires'] ?? '';
+                if ($expires === '') {
+                    return false;
+                }
+                $lines[] = '(expires): ' . $expires;
                 continue;
             }
             if ($name === 'host') {
-                $lines[] = 'host: ' . $request->host;
+                $lines[] = 'host: ' . $host;
                 continue;
             }
             if ($name === 'digest') {
                 $digest = $request->header('Digest') ?? '';
-                $expected = 'SHA-256=' . base64_encode(hash('sha256', $request->rawBody, true));
-                if (!hash_equals(strtolower($expected), strtolower($digest))
-                    && !hash_equals($expected, $digest)) {
+                if ($digest === '' || !self::digestMatches($digest, $request->rawBody)) {
                     return false;
                 }
                 $lines[] = 'digest: ' . $digest;
@@ -138,8 +203,25 @@ final class Http
             return false;
         }
 
-        $ok = openssl_verify(implode("\n", $lines), $signature, $publicKeyPem, OPENSSL_ALGO_SHA256);
-        return $ok === 1;
+        return openssl_verify(implode("\n", $lines), $signature, $publicKeyPem, OPENSSL_ALGO_SHA256) === 1;
+    }
+
+    private static function digestMatches(string $header, string $body): bool
+    {
+        $expected = base64_encode(hash('sha256', $body, true));
+        foreach (explode(',', $header) as $part) {
+            $part = trim($part);
+            $eq = strpos($part, '=');
+            if ($eq === false) {
+                continue;
+            }
+            $algo = strtolower(trim(substr($part, 0, $eq)));
+            $value = trim(substr($part, $eq + 1));
+            if (in_array($algo, ['sha-256', 'sha256'], true) && hash_equals($expected, $value)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**
@@ -152,13 +234,16 @@ final class Http
             return null;
         }
 
-        $signed = ['(request-target)', 'host', 'date', 'digest'];
+        $signed = ['(request-target)', 'host', 'date'];
         $lines = [
             '(request-target): ' . strtolower($method) . ' ' . $path,
             'host: ' . $headers['Host'],
             'date: ' . $headers['Date'],
-            'digest: ' . $headers['Digest'],
         ];
+        if (isset($headers['Digest']) && $headers['Digest'] !== '') {
+            $signed[] = 'digest';
+            $lines[] = 'digest: ' . $headers['Digest'];
+        }
 
         $private = openssl_pkey_get_private($keys['private']);
         if ($private === false) {

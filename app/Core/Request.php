@@ -136,14 +136,61 @@ final class Request
      */
     public function signatureTarget(): string
     {
-        $uri = (string) ($_SERVER['REQUEST_URI'] ?? $this->path);
-        $path = parse_url($uri, PHP_URL_PATH);
-        $path = is_string($path) ? $path : $this->path;
-        $query = parse_url($uri, PHP_URL_QUERY);
-        if (is_string($query) && $query !== '') {
-            $path .= '?' . $query;
+        $targets = $this->signatureTargets();
+        return $targets[0] ?? (strtolower($this->method) . ' ' . $this->path);
+    }
+
+    /**
+     * Varianti di `(request-target)`: rewrite CGI e slash finale cambiano
+     * il path visto da PHP rispetto a quello firmato da Mastodon.
+     *
+     * @return list<string>
+     */
+    public function signatureTargets(): array
+    {
+        $method = strtolower($this->method);
+        $candidates = [];
+        $push = static function (string $path, ?string $query = null) use (&$candidates, $method): void {
+            if ($path === '' || $path[0] !== '/') {
+                $path = '/' . ltrim($path, '/');
+            }
+            $candidates[] = $method . ' ' . $path;
+            if (is_string($query) && $query !== '') {
+                $candidates[] = $method . ' ' . $path . '?' . $query;
+            }
+            if (str_ends_with($path, '/') && $path !== '/') {
+                $candidates[] = $method . ' ' . rtrim($path, '/');
+            } elseif ($path !== '/') {
+                $candidates[] = $method . ' ' . $path . '/';
+            }
+        };
+
+        $uri = (string) ($_SERVER['REQUEST_URI'] ?? '');
+        if ($uri !== '') {
+            $path = parse_url($uri, PHP_URL_PATH);
+            $query = parse_url($uri, PHP_URL_QUERY);
+            if (is_string($path) && $path !== '') {
+                $push($path, is_string($query) ? $query : null);
+            }
         }
-        return strtolower($this->method) . ' ' . $path;
+
+        $push($this->path !== '' ? $this->path : '/', isset($_SERVER['QUERY_STRING']) ? (string) $_SERVER['QUERY_STRING'] : null);
+
+        $pathInfo = $_SERVER['PATH_INFO'] ?? null;
+        if (is_string($pathInfo) && $pathInfo !== '') {
+            $push($pathInfo);
+        }
+
+        return array_values(array_unique($candidates));
+    }
+
+    /**
+     * Host dell'header HTTP così come è arrivato (porta inclusa se c'era).
+     */
+    public function hostHeader(): string
+    {
+        $raw = $this->header('host');
+        return $raw !== null && $raw !== '' ? $raw : $this->host;
     }
 
     public function isGet(): bool
@@ -212,9 +259,31 @@ final class Request
 
     public function header(string $name): ?string
     {
-        $key = 'HTTP_' . strtoupper(str_replace('-', '_', $name));
-        $value = $_SERVER[$key] ?? null;
-        return is_string($value) ? $value : null;
+        $want = strtolower($name);
+        $cgi = match ($want) {
+            'content-type' => ['CONTENT_TYPE', 'HTTP_CONTENT_TYPE'],
+            'content-length' => ['CONTENT_LENGTH', 'HTTP_CONTENT_LENGTH'],
+            'digest' => ['HTTP_DIGEST', 'REDIRECT_HTTP_DIGEST'],
+            'signature' => ['HTTP_SIGNATURE', 'REDIRECT_HTTP_SIGNATURE'],
+            'authorization' => ['HTTP_AUTHORIZATION', 'REDIRECT_HTTP_AUTHORIZATION'],
+            default => ['HTTP_' . strtoupper(str_replace('-', '_', $want))],
+        };
+        foreach ($cgi as $key) {
+            $value = $_SERVER[$key] ?? null;
+            if (is_string($value) && $value !== '') {
+                return $value;
+            }
+        }
+
+        if (function_exists('getallheaders')) {
+            foreach (getallheaders() as $headerName => $headerValue) {
+                if (strtolower((string) $headerName) === $want && is_string($headerValue) && $headerValue !== '') {
+                    return $headerValue;
+                }
+            }
+        }
+
+        return null;
     }
 
     public function userAgent(): string

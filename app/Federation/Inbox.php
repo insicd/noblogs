@@ -42,7 +42,20 @@ final class Inbox
             return 400;
         }
 
-        $remote = self::loadRemote($actorId, $request);
+        if ($blog === null) {
+            $blog = self::blogFromPayload($payload);
+        }
+        if ($blog === null && in_array($type, ['Create', 'Update'], true)) {
+            $object = $payload['object'] ?? null;
+            if (is_array($object)) {
+                $blog = self::blogFromPayload(['object' => $object] + $payload);
+            }
+        }
+        if ($blog === null && $type === 'Delete') {
+            $blog = self::blogFromStoredObject($payload);
+        }
+
+        $remote = self::loadRemote($actorId, $request, $blog);
         if ($remote === null) {
             return 401;
         }
@@ -51,17 +64,11 @@ final class Inbox
             return 401;
         }
 
-        if ($blog === null) {
-            $blog = self::blogFromPayload($payload);
-        }
         if ($blog === null && in_array($type, ['Create', 'Update'], true)) {
             $fetched = self::embeddedObject($payload['object'] ?? null);
             if (is_array($fetched)) {
                 $blog = self::blogFromPayload(['object' => $fetched] + $payload);
             }
-        }
-        if ($blog === null && $type === 'Delete') {
-            $blog = self::blogFromStoredObject($payload);
         }
         if ($blog === null) {
             return 404;
@@ -448,7 +455,7 @@ final class Inbox
     /**
      * @return array<string,mixed>|null
      */
-    private static function loadRemote(string $actorId, Request $request): ?array
+    private static function loadRemote(string $actorId, Request $request, ?Blog $signer = null): ?array
     {
         $signature = Http::parseSignatureHeader($request->header('Signature') ?? '')
             ?? Http::parseSignatureHeader(ltrim(substr($request->header('Authorization') ?? '', 10)))
@@ -465,9 +472,15 @@ final class Inbox
             return $cached;
         }
 
-        $document = Http::getJson($fetchUrl);
+        $document = Http::getJson($fetchUrl, $signer);
         if ($document === null && $fetchUrl !== $actorId) {
-            $document = Http::getJson($actorId);
+            $document = Http::getJson($actorId, $signer);
+        }
+        if ($document === null && $signer !== null) {
+            $document = Http::getJson($fetchUrl);
+            if ($document === null && $fetchUrl !== $actorId) {
+                $document = Http::getJson($actorId);
+            }
         }
         if ($document === null) {
             return $cached;
