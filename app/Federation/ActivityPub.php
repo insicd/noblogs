@@ -31,6 +31,9 @@ final class ActivityPub
 
     public const PUBLIC = 'https://www.w3.org/ns/activitystreams#Public';
 
+    /** Caratteri di titolo e testo federati, spazi compresi. */
+    private const TEASER = 240;
+
     public static function instanceEnabled(): bool
     {
         $stored = Setting::get('federation.enabled');
@@ -186,8 +189,9 @@ final class ActivityPub
     /** @return array<string,mixed> */
     public static function articleDocument(Blog $blog, Post $post): array
     {
-        $html = self::html($blog, $post);
-        $attachments = self::attachments($html, $blog, $post);
+        $federated = self::federatedContent($blog, $post);
+        $html = $federated['html'];
+        $attachments = $federated['truncated'] ? [] : self::attachments($html, $blog, $post);
         $document = [
             '@context' => self::CONTEXT,
             'id' => self::objectId($blog, $post),
@@ -479,6 +483,38 @@ final class ActivityPub
         } catch (\Exception) {
             return gmdate('Y-m-d\TH:i:s\Z');
         }
+    }
+
+    /**
+     * Testo federato: i primi 240 caratteri di titolo e corpo (spazi compresi).
+     * Se l'articolo è più lungo, sotto arriva il link reale; se ci sta tutto,
+     * parte intero e senza quel link extra.
+     *
+     * @return array{html:string,truncated:bool}
+     */
+    private static function federatedContent(Blog $blog, Post $post): array
+    {
+        $title = trim((string) preg_replace('/\s+/u', ' ', $post->title));
+        $body = Str::plain($post->content ?? '');
+        $full = $title === '' ? $body : ($body === '' ? $title : $title . ' ' . $body);
+
+        if (mb_strlen($full, 'UTF-8') <= self::TEASER) {
+            return ['html' => self::html($blog, $post), 'truncated' => false];
+        }
+
+        $gap = ($title !== '' && $body !== '') ? 1 : 0;
+        $remain = self::TEASER - mb_strlen($title, 'UTF-8') - $gap;
+        $excerpt = $remain > 0 ? mb_substr($body, 0, $remain, 'UTF-8') : '';
+        $url = Url::post($blog, $post->slug);
+        $safeUrl = htmlspecialchars($url, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+
+        $html = '';
+        if ($excerpt !== '') {
+            $html .= '<p>' . htmlspecialchars($excerpt, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . '</p>';
+        }
+        $html .= '<p><a href="' . $safeUrl . '">' . $safeUrl . '</a></p>';
+
+        return ['html' => $html, 'truncated' => true];
     }
 
     private static function html(Blog $blog, Post $post): string
