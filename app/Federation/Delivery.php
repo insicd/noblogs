@@ -21,11 +21,6 @@ final class Delivery
     private const BATCH = 8;
     private const MAX_ATTEMPTS = 8;
 
-    /** @var list<array{blog_id:int, activity:array<string,mixed>, inboxes:list<string>}> */
-    private static array $afterResponse = [];
-
-    private static bool $registered = false;
-
     public static function publish(Blog $blog, Post $post, string $type): void
     {
         if (!ActivityPub::blogEnabled($blog) || $post->is_page) {
@@ -84,47 +79,6 @@ final class Delivery
                 'next_attempt_at' => $when,
                 'created_at'      => $now,
             ]);
-        }
-    }
-
-    /**
-     * Consegna dopo che la risposta HTTP è già stata inviata.
-     * Mastodon altrimenti può lasciare il Follow in pending: se l'Accept
-     * parte mentre sta ancora aspettando il 202, la richiesta scade.
-     *
-     * @param array<string,mixed> $activity
-     * @param list<string> $inboxes
-     */
-    public static function afterResponse(Blog $blog, array $activity, array $inboxes): void
-    {
-        self::$afterResponse[] = [
-            'blog_id'  => $blog->id,
-            'activity' => $activity,
-            'inboxes'  => $inboxes,
-        ];
-        if (!self::$registered) {
-            self::$registered = true;
-            register_shutdown_function([self::class, 'flushAfterResponse']);
-        }
-    }
-
-    public static function flushAfterResponse(): void
-    {
-        $jobs = self::$afterResponse;
-        self::$afterResponse = [];
-        if ($jobs === []) {
-            return;
-        }
-
-        ignore_user_abort(true);
-        usleep(500000);
-
-        foreach ($jobs as $job) {
-            $blog = Blog::find((int) $job['blog_id']);
-            if ($blog === null) {
-                continue;
-            }
-            self::sendNow($blog, $job['activity'], $job['inboxes']);
         }
     }
 

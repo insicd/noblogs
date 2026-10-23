@@ -110,20 +110,22 @@ final class Inbox
             $followActor = (string) $remote['actor_id'];
         }
 
-        // Mastodon tiene il Follow in pending finché non arriva un Accept
-        // il cui object è il Follow originale (id incluso), senza @context
-        // nidificato. Gli altri software spesso chiudono da soli.
+        // Mastodon tiene il Follow in pending finché non arriva un Accept.
+        // L'object deve essere il Follow originale (id e type), non una
+        // stringa JSON e senza @context nidificato: Mastodon lo associa
+        // al FollowRequest sia per uri sia come Follow incorporato.
+        $follow = [
+            'id' => $followId !== '' ? $followId : ($actorUrl . '/follow/' . Str::uid(12)),
+            'type' => 'Follow',
+            'actor' => $followActor,
+            'object' => ($object !== '' ? $object : $actorUrl),
+        ];
         $accept = [
-            '@context' => ActivityPub::CONTEXT,
-            'id' => $actorUrl . '#accept-' . Str::uid(12),
+            '@context' => 'https://www.w3.org/ns/activitystreams',
+            'id' => $actorUrl . '/accept/' . Str::uid(12),
             'type' => 'Accept',
             'actor' => $actorUrl,
-            'object' => [
-                'id' => $followId !== '' ? $followId : ($actorUrl . '#follow-' . Str::uid(8)),
-                'type' => 'Follow',
-                'actor' => $followActor,
-                'object' => $actorUrl,
-            ],
+            'object' => $follow,
             'to' => [$followActor],
         ];
 
@@ -135,7 +137,7 @@ final class Inbox
             }
         }
         if ($inboxes !== []) {
-            Delivery::afterResponse($blog, $accept, $inboxes);
+            Delivery::sendNow($blog, $accept, $inboxes);
         }
 
         return 202;

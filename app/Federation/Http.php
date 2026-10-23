@@ -73,12 +73,16 @@ final class Http
         }
         $headers['Signature'] = $signature;
         $headers['User-Agent'] = self::userAgent();
-        $headers['Accept'] = 'application/activity+json, application/json';
+        $headers['Accept'] = 'application/activity+json, application/ld+json, application/json';
+        $headers['Expect'] = '';
 
         $response = self::request('POST', $inbox, $body, $headers, false);
         $status = $response['status'] ?? 0;
         if ($status < 200 || $status >= 300) {
-            ErrorHandler::log(new \RuntimeException('ActivityPub POST ' . $inbox . ' → ' . $status));
+            $hint = is_array($response) ? substr(trim($response['body']), 0, 180) : '';
+            ErrorHandler::log(new \RuntimeException(
+                'ActivityPub POST ' . $inbox . ' → ' . $status . ($hint !== '' ? ' ' . $hint : '')
+            ));
         }
 
         return $status;
@@ -148,17 +152,21 @@ final class Http
             return null;
         }
 
-        $signed = ['(request-target)', 'host', 'date', 'digest', 'content-type'];
+        $signed = ['(request-target)', 'host', 'date', 'digest'];
         $lines = [
             '(request-target): ' . strtolower($method) . ' ' . $path,
             'host: ' . $headers['Host'],
             'date: ' . $headers['Date'],
             'digest: ' . $headers['Digest'],
-            'content-type: ' . $headers['Content-Type'],
         ];
 
+        $private = openssl_pkey_get_private($keys['private']);
+        if ($private === false) {
+            return null;
+        }
+
         $binary = '';
-        if (!openssl_sign(implode("\n", $lines), $binary, $keys['private'], OPENSSL_ALGO_SHA256)) {
+        if (!openssl_sign(implode("\n", $lines), $binary, $private, OPENSSL_ALGO_SHA256)) {
             return null;
         }
 
@@ -303,16 +311,29 @@ final class Http
         if ($handle === false) {
             return null;
         }
-        curl_setopt_array($handle, [
-            CURLOPT_CUSTOMREQUEST    => $method,
-            CURLOPT_RETURNTRANSFER   => true,
-            CURLOPT_FOLLOWLOCATION   => $followRedirects,
-            CURLOPT_MAXREDIRS        => $followRedirects ? 3 : 0,
-            CURLOPT_TIMEOUT          => self::TIMEOUT,
-            CURLOPT_HTTPHEADER       => $lines,
-            CURLOPT_POSTFIELDS       => $body !== '' ? $body : null,
-            CURLOPT_USERAGENT        => $headers['User-Agent'] ?? self::userAgent(),
-        ]);
+        $opts = [
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_FOLLOWLOCATION => $followRedirects,
+            CURLOPT_MAXREDIRS      => $followRedirects ? 3 : 0,
+            CURLOPT_CONNECTTIMEOUT => 8,
+            CURLOPT_TIMEOUT        => self::TIMEOUT,
+            CURLOPT_HTTPHEADER     => $lines,
+            CURLOPT_USERAGENT      => $headers['User-Agent'] ?? self::userAgent(),
+            CURLOPT_HTTP_VERSION   => CURL_HTTP_VERSION_1_1,
+        ];
+        if (defined('CURL_IPRESOLVE_V4')) {
+            $opts[CURLOPT_IPRESOLVE] = CURL_IPRESOLVE_V4;
+        }
+        if ($method === 'POST') {
+            $opts[CURLOPT_POST] = true;
+            $opts[CURLOPT_POSTFIELDS] = $body;
+        } else {
+            $opts[CURLOPT_CUSTOMREQUEST] = $method;
+            if ($body !== '') {
+                $opts[CURLOPT_POSTFIELDS] = $body;
+            }
+        }
+        curl_setopt_array($handle, $opts);
         if (defined('CURLPROTO_HTTPS')) {
             curl_setopt($handle, CURLOPT_PROTOCOLS, CURLPROTO_HTTPS);
             curl_setopt($handle, CURLOPT_REDIR_PROTOCOLS, CURLPROTO_HTTPS);

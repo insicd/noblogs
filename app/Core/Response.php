@@ -142,14 +142,6 @@ final class Response
         if (!$headOnly) {
             echo $this->body;
         }
-        if (PHP_SAPI !== 'cli' && function_exists('fastcgi_finish_request')) {
-            fastcgi_finish_request();
-        } elseif (PHP_SAPI !== 'cli') {
-            while (ob_get_level() > 0) {
-                ob_end_flush();
-            }
-            flush();
-        }
     }
 
     private function normalizeHeaderName(string $name): string
