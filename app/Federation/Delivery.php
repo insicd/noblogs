@@ -21,6 +21,11 @@ final class Delivery
     private const BATCH = 8;
     private const MAX_ATTEMPTS = 8;
 
+    /** @var list<array{blog_id:int, activity:array<string,mixed>, inboxes:list<string>}> */
+    private static array $afterResponse = [];
+
+    private static bool $registered = false;
+
     public static function publish(Blog $blog, Post $post, string $type): void
     {
         if (!ActivityPub::blogEnabled($blog) || $post->is_page) {
@@ -82,6 +87,78 @@ final class Delivery
         }
     }
 
+    /**
+     * Consegna dopo che la risposta HTTP è già stata inviata.
+     * Mastodon altrimenti può lasciare il Follow in pending: se l'Accept
+     * parte mentre sta ancora aspettando il 202, la richiesta scade.
+     *
+     * @param array<string,mixed> $activity
+     * @param list<string> $inboxes
+     */
+    public static function afterResponse(Blog $blog, array $activity, array $inboxes): void
+    {
+        self::$afterResponse[] = [
+            'blog_id'  => $blog->id,
+            'activity' => $activity,
+            'inboxes'  => $inboxes,
+        ];
+        if (!self::$registered) {
+            self::$registered = true;
+            register_shutdown_function([self::class, 'flushAfterResponse']);
+        }
+    }
+
+    public static function flushAfterResponse(): void
+    {
+        $jobs = self::$afterResponse;
+        self::$afterResponse = [];
+        if ($jobs === []) {
+            return;
+        }
+
+        ignore_user_abort(true);
+        usleep(500000);
+
+        foreach ($jobs as $job) {
+            $blog = Blog::find((int) $job['blog_id']);
+            if ($blog === null) {
+                continue;
+            }
+            self::sendNow($blog, $job['activity'], $job['inboxes']);
+        }
+    }
+
+    /**
+     * POST immediato; se fallisce resta in coda per i retry.
+     *
+     * @param array<string,mixed> $activity
+     * @param list<string> $inboxes
+     */
+    public static function sendNow(Blog $blog, array $activity, array $inboxes): bool
+    {
+        $targets = [];
+        foreach ($inboxes as $inbox) {
+            if (!is_string($inbox) || $inbox === '' || isset($targets[$inbox]) || !Http::isSafeUrl($inbox)) {
+                continue;
+            }
+            $targets[$inbox] = true;
+        }
+        $urls = array_keys($targets);
+        if ($urls === []) {
+            return false;
+        }
+
+        foreach ($urls as $inbox) {
+            $status = Http::postSigned($blog, $inbox, $activity);
+            if ($status >= 200 && $status < 300) {
+                return true;
+            }
+        }
+
+        self::enqueueTo($blog, $activity, $urls);
+        return false;
+    }
+
     public static function processDue(int $limit = 20): int
     {
         Schema::ensure();
@@ -103,8 +180,8 @@ final class Delivery
                 continue;
             }
 
-            $ok = Http::postSigned($blog, (string) $row['inbox_url'], $payload);
-            if ($ok) {
+            $status = Http::postSigned($blog, (string) $row['inbox_url'], $payload);
+            if ($status >= 200 && $status < 300) {
                 $db->delete('ap_deliveries', 'id = ?', [(int) $row['id']]);
                 $sent++;
                 continue;
@@ -121,7 +198,7 @@ final class Delivery
                 'ap_deliveries',
                 [
                     'attempts'        => $attempts,
-                    'last_error'      => 'consegna non riuscita',
+                    'last_error'      => $status > 0 ? 'HTTP ' . $status : 'consegna non riuscita',
                     'next_attempt_at' => gmdate('Y-m-d H:i:s', time() + $delay),
                 ],
                 'id = :row_id',

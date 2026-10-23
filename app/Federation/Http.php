@@ -36,25 +36,32 @@ final class Http
         return is_array($decoded) ? $decoded : null;
     }
 
-    /** @param array<string,mixed> $payload */
-    public static function postSigned(Blog $blog, string $inbox, array $payload): bool
+    /**
+     * @param array<string,mixed> $payload
+     * @return int HTTP status, 0 se il trasporto fallisce
+     */
+    public static function postSigned(Blog $blog, string $inbox, array $payload): int
     {
         $body = json_encode($payload, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
         if (!is_string($body) || $body === '') {
-            return false;
+            return 0;
         }
 
         $parts = parse_url($inbox);
         $host = strtolower((string) ($parts['host'] ?? ''));
         $path = (string) ($parts['path'] ?? '/');
+        if ($path === '') {
+            $path = '/';
+        }
         if (isset($parts['query']) && $parts['query'] !== '') {
             $path .= '?' . $parts['query'];
         }
 
+        $port = isset($parts['port']) ? (int) $parts['port'] : 443;
         $date = gmdate('D, d M Y H:i:s') . ' GMT';
         $digest = 'SHA-256=' . base64_encode(hash('sha256', $body, true));
         $headers = [
-            'Host'         => $host . (isset($parts['port']) ? ':' . $parts['port'] : ''),
+            'Host'         => $host . ($port !== 443 ? ':' . $port : ''),
             'Date'         => $date,
             'Digest'       => $digest,
             'Content-Type' => 'application/activity+json',
@@ -62,18 +69,19 @@ final class Http
 
         $signature = self::sign($blog, 'post', $path, $headers);
         if ($signature === null) {
-            return false;
+            return 0;
         }
         $headers['Signature'] = $signature;
         $headers['User-Agent'] = self::userAgent();
         $headers['Accept'] = 'application/activity+json, application/json';
 
-        $response = self::request('POST', $inbox, $body, $headers);
-        if ($response === null) {
-            return false;
+        $response = self::request('POST', $inbox, $body, $headers, false);
+        $status = $response['status'] ?? 0;
+        if ($status < 200 || $status >= 300) {
+            ErrorHandler::log(new \RuntimeException('ActivityPub POST ' . $inbox . ' → ' . $status));
         }
 
-        return $response['status'] >= 200 && $response['status'] < 300;
+        return $status;
     }
 
     public static function verify(Request $request, string $publicKeyPem): bool
@@ -238,14 +246,14 @@ final class Http
      * @param array<string,string> $headers
      * @return array{status:int,body:string}|null
      */
-    private static function request(string $method, string $url, string $body, array $headers): ?array
+    private static function request(string $method, string $url, string $body, array $headers, bool $followRedirects = true): ?array
     {
         if (!self::isSafeUrl($url)) {
             return null;
         }
 
         if (function_exists('curl_init')) {
-            return self::curl($method, $url, $body, $headers);
+            return self::curl($method, $url, $body, $headers, $followRedirects);
         }
 
         $headerLines = [];
@@ -254,13 +262,13 @@ final class Http
         }
         $context = stream_context_create([
             'http' => [
-                'method'        => $method,
-                'header'        => implode("\r\n", $headerLines),
-                'content'       => $body,
-                'timeout'       => self::TIMEOUT,
-                'ignore_errors' => true,
-                'follow_location' => 1,
-                'max_redirects' => 3,
+                'method'          => $method,
+                'header'          => implode("\r\n", $headerLines),
+                'content'         => $body,
+                'timeout'         => self::TIMEOUT,
+                'ignore_errors'   => true,
+                'follow_location' => $followRedirects ? 1 : 0,
+                'max_redirects'   => $followRedirects ? 3 : 0,
             ],
             'ssl' => [
                 'verify_peer'      => true,
@@ -284,7 +292,7 @@ final class Http
      * @param array<string,string> $headers
      * @return array{status:int,body:string}|null
      */
-    private static function curl(string $method, string $url, string $body, array $headers): ?array
+    private static function curl(string $method, string $url, string $body, array $headers, bool $followRedirects = true): ?array
     {
         $lines = [];
         foreach ($headers as $name => $value) {
@@ -298,8 +306,8 @@ final class Http
         curl_setopt_array($handle, [
             CURLOPT_CUSTOMREQUEST    => $method,
             CURLOPT_RETURNTRANSFER   => true,
-            CURLOPT_FOLLOWLOCATION   => true,
-            CURLOPT_MAXREDIRS        => 3,
+            CURLOPT_FOLLOWLOCATION   => $followRedirects,
+            CURLOPT_MAXREDIRS        => $followRedirects ? 3 : 0,
             CURLOPT_TIMEOUT          => self::TIMEOUT,
             CURLOPT_HTTPHEADER       => $lines,
             CURLOPT_POSTFIELDS       => $body !== '' ? $body : null,

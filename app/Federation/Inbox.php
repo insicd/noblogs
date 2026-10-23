@@ -88,33 +88,54 @@ final class Inbox
      */
     private static function follow(Blog $blog, array $payload, array $remote): int
     {
+        $actorUrl = ActivityPub::actorId($blog);
         $object = self::idOf($payload['object'] ?? null);
-        if ($object !== '' && $object !== ActivityPub::actorId($blog)) {
+        if ($object !== '' && rtrim($object, '/') !== rtrim($actorUrl, '/')) {
             return 404;
         }
 
         ApFollower::upsert($blog, $remote);
+        $followId = self::idOf($payload['id'] ?? null);
         ApNotification::record($blog, [
             'type'         => 'follow',
             'actor_id'     => $remote['actor_id'],
             'handle'       => $remote['handle'],
             'display_name' => $remote['display_name'],
             'avatar_url'   => $remote['avatar_url'],
-            'activity_id'  => self::idOf($payload['id'] ?? null) ?: null,
+            'activity_id'  => $followId !== '' ? $followId : null,
         ]);
 
+        $followActor = self::idOf($payload['actor'] ?? $remote['actor_id']);
+        if ($followActor === '') {
+            $followActor = (string) $remote['actor_id'];
+        }
+
+        // Mastodon tiene il Follow in pending finché non arriva un Accept
+        // il cui object è il Follow originale (id incluso), senza @context
+        // nidificato. Gli altri software spesso chiudono da soli.
         $accept = [
             '@context' => ActivityPub::CONTEXT,
-            'id' => ActivityPub::actorId($blog) . '#accept-' . Str::uid(12),
+            'id' => $actorUrl . '#accept-' . Str::uid(12),
             'type' => 'Accept',
-            'actor' => ActivityPub::actorId($blog),
-            'object' => $payload,
-            'to' => [$remote['actor_id']],
+            'actor' => $actorUrl,
+            'object' => [
+                'id' => $followId !== '' ? $followId : ($actorUrl . '#follow-' . Str::uid(8)),
+                'type' => 'Follow',
+                'actor' => $followActor,
+                'object' => $actorUrl,
+            ],
+            'to' => [$followActor],
         ];
-        $inbox = (string) ($remote['inbox_url'] ?? '');
-        if ($inbox !== '') {
-            Delivery::enqueueTo($blog, $accept, [$inbox]);
-            Delivery::processDue(2);
+
+        $inboxes = [];
+        foreach (['inbox_url', 'shared_inbox_url'] as $key) {
+            $url = trim((string) ($remote[$key] ?? ''));
+            if ($url !== '') {
+                $inboxes[] = $url;
+            }
+        }
+        if ($inboxes !== []) {
+            Delivery::afterResponse($blog, $accept, $inboxes);
         }
 
         return 202;
@@ -465,14 +486,14 @@ final class Inbox
     private static function parseActor(array $document, string $fallbackId): ?array
     {
         $id = self::idOf($document['id'] ?? $fallbackId);
-        $inbox = (string) ($document['inbox'] ?? '');
+        $inbox = self::idOf($document['inbox'] ?? '');
         if ($id === '' || $inbox === '' || !Http::isSafeUrl($inbox)) {
             return null;
         }
 
         $shared = '';
         if (isset($document['endpoints']) && is_array($document['endpoints'])) {
-            $shared = (string) ($document['endpoints']['sharedInbox'] ?? '');
+            $shared = self::idOf($document['endpoints']['sharedInbox'] ?? '');
         }
 
         $publicKey = '';
